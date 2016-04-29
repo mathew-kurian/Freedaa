@@ -1,0 +1,100 @@
+@import 'shared/reset';
+@import 'shared/fonts';
+@import 'shared/base';
+@import 'shared/layouts';
+
+body {
+  font-family: 'Open Sans', sans-serif;
+  overflow: hidden;
+}
+
+.float {
+  margin: 0 auto;
+  transform: translateY(-50%);
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  max-width: 520px;
+  padding: 20px;
+}
+
+.image-area {
+  flex: 1;
+}
+
+.logo {
+  width: 100%;
+}
+
+.letter {
+  font-weight: 100;
+  font-size: 20px;
+}
+
+.signature {
+  font-family: 'Coffee', sans-serif;
+  font-size: 25px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.content-area {
+  margin-left: 25px;
+  flex: 4;
+}
+
+.big {
+  font-size: 13px;
+  letter-spacing: 1px;
+  font-weight: bold;
+  font-family: "Proxima Nova", "Open Sans", sans-serif;
+  text-transform: uppercase;
+}
+
+.toolbar {
+  position: relative;
+  top: 50px;
+  .item {
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 10px;
+    color: #AAA;
+    font-weight: bold;
+    font-family: "Proxima Nova", "Open Sans", sans-serif;
+    margin-right: 10px;
+  }
+}
+
+.messenger {
+  font-family: helvetica, arial, sans-serif;
+  min-height: 28px;
+  position: relative;
+
+  .button {
+    white-space: nowrap;
+    color: #fff;
+    font-size: 13px;
+    border-radius: 4px;
+    padding: 6px 8px 5px 8px;
+    background: #0084FF;
+    display: inline-block;
+    height: 28px;
+    position: absolute;
+    i {
+      display: inline-block;
+      height: 34px;
+      width: 17px;
+      top: -1px;
+      vertical-align: middle;
+      background: url(../images/fb.png) no-repeat 0 -17px;
+      background-size: 100% auto;
+    }
+    .text {
+      vertical-align: top;
+      margin-left: 3px;
+      display: inline-block;
+    }
+  }
+}

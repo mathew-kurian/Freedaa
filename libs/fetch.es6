@@ -1,27 +1,26 @@
 import request from 'superagent';
-import extend from 'extend';
-import URL from 'url-parse';
 
 // mimics fetch using superagent to improve cross-browser compatibility
 // refer to https://github.com/github/fetch for the fetch API
 export default function fetch(url, opts = {}) {
   return new Promise((resolve, reject) => {
-    if (typeof opts.body === 'object') {
-      opts.headers = extend(true, {'Content-Type': 'application/json'}, opts.headers || {});
+    if (typeof opts.body === 'object' || opts.json) {
+      opts.headers = Object.assign({'Content-Type': 'application/json'}, opts.headers || {});
     }
 
     const method = opts.method || 'get';
-
-    const urlParts = new URL(url, true);
-    urlParts.query = Object.assign(urlParts.query || {}, opts.query, method === 'get' ? opts.body : {});
-    url = urlParts.toString();
-
     let req = request[method.toLowerCase()](url);
 
-    // req = req.withCredentials();
+    req = req.query(opts.query);
 
-    if (method === 'post') {
+    if (opts.method === 'get') {
+      req = req.query(opts.body);
+    } else if (method === 'post') {
       req = req.send(opts.body);
+    }
+
+    if (opts.credentials) {
+      req = req.withCredentials();
     }
 
     if (opts.headers) {
@@ -29,8 +28,6 @@ export default function fetch(url, opts = {}) {
         req = req.set(k, v);
       }
     }
-
-    console.log(url, opts);
 
     req.end((err, res) => {
       if (err) {
@@ -59,6 +56,14 @@ export default function fetch(url, opts = {}) {
 
         reject(err);
       } else {
+        if ((opts.json || /\/json/g.test(res.headers['Content-Type'])) && res.text) {
+          try {
+            res.body = JSON.parse(res.text.trim());
+          } catch (e) {
+            console.log(e);
+          }
+        }
+
         resolve(res);
       }
     });

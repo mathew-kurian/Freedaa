@@ -1,6 +1,0 @@
-{
-  "MongoDb": {
-    "clearOnStart": true,
-    "database": "freedaa_test"
-  }
-}

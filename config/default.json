@@ -1,41 +1,18 @@
 {
-  "Client": {
-    "Server": {
-      "protocol": "https",
-      "port": 3006,
-      "overridePort": 0,
-      "hostname": "localhost"
-    }
-  },
-  "Mode": "manual",
-  "Server": {
-    "protocol": "http",
-    "port": 3000,
-    "httpsRejectUnauthorized": false,
-    "sslKey": "./keys/freedaa.com.key",
-    "sslCert": "./keys/freedaa.com.crt",
-    "sslCa": "./keys/freedaa.com.chain.crt",
-    "hostnames": [
-      "freedaa.com",
-      "www.freedaa.com",
-      "staging.freedaa.com",
-      "127.0.0.1",
-      "0.0.0.0"
-    ]
+  "Google": {
+    "key": "AIzaSyC4WMsYT5UO4n2VdHaDqpAiHZ6xyEHKCm8"
   },
   "Facebook": {
-    "pageAccessToken": "EAAQiST25DMYBAOKjZCCQWzGJVwYEdl89LwkoNa3ZAEEnhHBFK9O5a81hzhFdhwCC9nkR4BfPZCUoSARHIxOzUS60zEoVJhz0GBsrqQfB1UjRNv2ZA3GpNgoitIxy2ankrZASQOOgeh6pmu8ymQlJ9ZBbZAd3as1tVG6tufu10RaoAZDZD"
+    "accessToken": "EAAQiST25DMYBAOKjZCCQWzGJVwYEdl89LwkoNa3ZAEEnhHBFK9O5a81hzhFdhwCC9nkR4BfPZCUoSARHIxOzUS60zEoVJhz0GBsrqQfB1UjRNv2ZA3GpNgoitIxy2ankrZASQOOgeh6pmu8ymQlJ9ZBbZAd3as1tVG6tufu10RaoAZDZD"
   },
-  "IsTest": false,
-  "AppId": "local",
-  "AppBranch": "local",
-  "NodeEnv": "development",
-  "MongoDb": {
-    "clearOnStart": false,
-    "username": "root",
-    "password": "123456",
-    "database": "freedaa",
-    "host": "127.0.0.1",
-    "port": "27017"
-  }
+  "Chatbot": {
+    "enabled": true
+  },
+  "Imgur": {
+    "email": "admin@freedaa.com",
+    "password": "freedaa123*",
+    "clientId": "6fc936b0c665705"
+  },
+  "Port": 5000,
+  "MongoDB": "mongodb://localhost/freedaa"
 }

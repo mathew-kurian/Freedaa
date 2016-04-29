@@ -1,0 +1,68 @@
+@import 'shared/reset';
+@import 'shared/fonts';
+@import 'shared/base';
+@import 'shared/layouts';
+
+body {
+  font-family: 'Open Sans', sans-serif;
+  overflow: hidden;
+}
+
+.button {
+  white-space: nowrap;
+  color: #fff;
+  font-size: 13px;
+  border-radius: 4px;
+  padding: 6px 8px 5px 8px;
+  background: #0084FF;
+  display: inline-block;
+  height: 28px;
+  i {
+    display: inline-block;
+    height: 34px;
+    width: 17px;
+    vertical-align: middle;
+    background: url(../images/fb.png) no-repeat 0 -17px;
+    background-size: 100% auto;
+  }
+  .text {
+    vertical-align: top;
+    margin-left: 3px;
+    display: inline-block;
+  }
+}
+
+.post {
+  padding: 10px;
+  border-bottom: 1px solid #EEE;
+  position: relative;
+  cursor: pointer;
+  transition: box-shadow 400ms;
+  &:hover {
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.id {
+  font-size: 11px;
+  color: #AAA;
+  font-weight: 100;
+}
+
+.description {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.tag {
+  font-size: 10px;
+  font-weight: 100;
+  display: inline-block;
+  padding: 0 5px;
+  text-transform: uppercase;
+  color: #888;
+  border: 1px solid #888;
+  margin-right: 4px;
+}

@@ -1,3 +1,1 @@
-import * as DecisionTreeBot from './decision-tree-bot.es6';
-
-export {DecisionTreeBot};
+export {default as Freedaa} from './freedaa.es6';

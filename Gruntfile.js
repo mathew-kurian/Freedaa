@@ -1,16 +1,13 @@
-/* eslint strict: 0 */
+/* eslint strict: 0, global-require: 0 */
 
 'use strict';
 
-const mozjpeg = require('imagemin-mozjpeg');
 const autoprefixer = require('autoprefixer');
-const config = require('config');
 
 module.exports = grunt => {
   require('load-grunt-tasks')(grunt);
-  require('./tasks/grunt-filetransform')(grunt);
 
-  const gruntConfig = {
+  grunt.initConfig({
     uglify: {
       options: {
         banner: '/*! Grunt Uglify <%= grunt.template.today(\'yyyy-mm-dd\') %> */ ',
@@ -44,8 +41,7 @@ module.exports = grunt => {
       },
       dist: {
         options: {
-          style: 'compressed',
-          sourcemap: 'none'
+          style: 'compressed'
         },
         files: [{
           expand: true,
@@ -103,36 +99,6 @@ module.exports = grunt => {
         src: 'public/styles/*.css'
       }
     },
-    imagemin: {
-      dist: {
-        options: {
-          optimizationLevel: 4,
-          svgoPlugins: [{removeViewBox: false}],
-          use: [mozjpeg()]
-        },
-        files: [{
-          expand: true,
-          cwd: 'resources/images',
-          src: ['**/*.{png,jpg,gif}'],
-          dest: 'public/images'
-        }]
-      }
-    },
-    pug: {
-      dist: {
-        options: {
-          data: {config: JSON.stringify(config.get('Client'))},
-          optimizationLevel: 3
-        },
-        files: [{
-          expand: true,
-          cwd: 'views/',
-          src: ['**/*.pug'],
-          dest: 'public/',
-          ext: '.html'
-        }]
-      }
-    },
     copy: {
       dist: {
         files: [
@@ -155,38 +121,9 @@ module.exports = grunt => {
       }
     },
     clean: {
-      build: ['public/', './package.noDevDeps.json'],
-      compiled: ['./**/*.compiled.js', './**/*.compiled.js.map']
-    },
-    filetransform: {
-      babel: {
-        options: {
-          transformer: require('./tasks/babel-cli'),
-          extSrc: '.es6',
-          extDest: '.compiled.js',
-          env: 'server'
-        },
-        files: [{
-          expand: true,
-          src: ['**/*.es6', '!**/node_modules/**'],
-          ext: '.compiled.js'
-        }]
-      }
-    },
-    concurrent: {
-      clean: ['clean:build', 'clean:compiled'],
-      build: ['imagemin', 'browserify:dist', 'filetransform:babel', ['sass:dist', 'postcss:dist'], 'pug:dist'],
-      'build-production': ['imagemin', ['browserify:dist'], 'compile',
-        ['sass:dist', 'postcss:dist'], 'pug:dist']
+      build: ['public/']
     }
-  };
-
-  grunt.initConfig(gruntConfig);
-
-  grunt.registerTask('compile', [
-    'clean:compiled',
-    'filetransform:babel'
-  ]);
+  });
 
   grunt.registerTask('styles', [
     'sass:dist',
@@ -194,14 +131,11 @@ module.exports = grunt => {
   ]);
 
   grunt.registerTask('build', [
-    'concurrent:clean',
+    'clean:build',
     'copy:dist',
-    'concurrent:build'
-  ]);
-
-  grunt.registerTask('production', [
-    'copy:dist',
-    'concurrent:build-production'
+    'browserify:dist',
+    'sass:dist',
+    'postcss:dist'
   ]);
 
   grunt.registerTask('default', 'build');
