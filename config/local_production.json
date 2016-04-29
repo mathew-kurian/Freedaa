@@ -1,0 +1,14 @@
+{
+  "Client": {
+    "Server": {
+      "protocol": "http",
+      "overridePort": 80
+    }
+  },
+  "Server": {
+    "sslKey": "./keys/localhost.key",
+    "sslCert": "./keys/localhost.crt",
+    "sslCa": "./keys/localhost.csr",
+    "protocol": "http"
+  }
+}

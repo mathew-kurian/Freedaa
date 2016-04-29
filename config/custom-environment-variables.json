@@ -1,0 +1,33 @@
+{
+  "Client": {
+    "Server": {
+      "protocol": "https",
+      "hostname": "ENTERPRISE_APP_HOSTNAME",
+      "port": {
+        "__name": "BRANCHOFF_PORT",
+        "__format": "json"
+      }
+    }
+  },
+  "Server": {
+    "httpsRejectUnauthorized": {
+      "__name": "HTTPS_REJECT_UNAUTHORIZED",
+      "__format": "json"
+    },
+    "port": {
+      "__name": "BRANCHOFF_PORT",
+      "__format": "json"
+    },
+    "sslKey": "HTTPS_SSL_KEY",
+    "sslCert": "HTTPS_SSL_CERTIFICATE",
+    "sslCa": "HTTPS_SSL_CA"
+  },
+  "IsTest": {
+    "__name": "IS_RUNNING_TEST",
+    "__format": "json"
+  },
+  "NodeEnv": "NODE_ENV",
+  "Mode": "BRANCHOFF_MODE",
+  "AppId": "BRANCHOFF_VPID",
+  "AppBranch": "BRANCHOFF_BRANCH"
+}

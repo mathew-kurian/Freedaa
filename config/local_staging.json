@@ -1,0 +1,12 @@
+{
+  "MongoDb": {
+    "clearOnStart": true,
+    "database": "freedaa_test"
+  },
+  "Server": {
+    "sslKey": "./keys/localhost.key",
+    "sslCert": "./keys/localhost.crt",
+    "sslCa": "./keys/localhost.csr",
+    "protocol": "http"
+  }
+}

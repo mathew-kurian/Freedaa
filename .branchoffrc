@@ -1,0 +1,66 @@
+{
+  "start": "node index.compiled.js",
+  "hooksDir": "hooks/",
+  "preferPort": {
+    "mode": {
+      "manual": 3000
+    },
+    "branch": {
+      "master": 80
+    }
+  },
+  "env": {
+    "default": {
+      "HTTPS_SSL_KEY": "./keys/localhost.key",
+      "HTTPS_SSL_CERTIFICATE": "./keys/localhost.crt",
+      "HTTPS_SSL_CA": "./keys/localhost.chain.crt"
+    },
+    "mode": {
+      "local-release": {
+        "NODE_ENV": "local_production",
+        "HTTPS_REJECT_UNAUTHORIZED": false,
+        "NODE_TLS_REJECT_UNAUTHORIZED": 0,
+        "HTTPS_SSL_KEY": "./keys/localhost.key",
+        "HTTPS_SSL_CERTIFICATE": "./keys/localhost.crt",
+        "HTTPS_SSL_CA": "./keys/localhost.crt"
+      },
+      "local-stage": {
+        "NODE_ENV": "local_staging",
+        "HTTPS_REJECT_UNAUTHORIZED": false,
+        "NODE_TLS_REJECT_UNAUTHORIZED": 0,
+        "HTTPS_SSL_KEY": "./keys/localhost.key",
+        "HTTPS_SSL_CERTIFICATE": "./keys/localhost.crt",
+        "HTTPS_SSL_CA": "./keys/localhost.crt"
+      },
+      "stage": {
+        "NODE_ENV": "staging",
+        "HTTPS_REJECT_UNAUTHORIZED": false,
+        "NODE_TLS_REJECT_UNAUTHORIZED": 0
+      },
+      "release": {
+        "NODE_ENV": "production",
+        "HTTPS_REJECT_UNAUTHORIZED": true,
+        "NODE_TLS_REJECT_UNAUTHORIZED": true
+      }
+    },
+    "branch": {
+      "master": {
+        "HTTPS_SSL_KEY": "./keys/localhost.key",
+        "HTTPS_SSL_CERTIFICATE": "./keys/localhost.crt",
+        "HTTPS_SSL_CA": "./keys/localhost.chain.crt"
+      },
+      "master#release": {
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "pm2": {
+    "restart_delay": 10000,
+    "watch": false,
+    "min_uptime": "20s",
+    "max_restarts": 3,
+    "script": "./index.compiled.js",
+    "next_gen_js": false,
+    "max_memory_restart": "1G"
+  }
+}
