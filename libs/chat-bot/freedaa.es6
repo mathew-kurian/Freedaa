@@ -1,42 +1,8 @@
 import keyMirror from 'keymirror';
 import {Bot, Context, Types} from '../chatbot.es6';
 import {step, CATCH, FALLBACK, PROXY} from './fsm.es6';
-import CleverBot from 'cleverbot.io';
-import fetch from '../fetch.es6';
 import moment from 'moment';
 import tdiff from '../tdiff.es6';
-
-const UTC_OFFSET = new Date().getTimezoneOffset() * 60000;
-const HOUR = 60 * 60 * 1000;
-const TAG = 'freedaa';
-
-function wrap(a) {
-  return {output: a};
-}
-
-const cleverbot = new CleverBot('jSNrlROQLe2mO64c', 'vhxWWCBZxfjSxW4zvZoVmqmFLWl3qJxh');
-
-async function getSass(input, tag = null) {
-  cleverbot.setNick(tag);
-
-  return new Promise((resolve, reject) => {
-    cleverbot.create(function (err) {
-      if (err) {
-        console.error(err);
-        return reject(err);
-      }
-
-      cleverbot.ask(input, function (err, res) {
-        if (err) {
-          console.error(err);
-          return reject(err);
-        }
-
-        resolve(res);
-      });
-    });
-  });
-}
 
 export default class Freedaa extends Bot {
   static Context = class extends Context {
@@ -48,6 +14,7 @@ export default class Freedaa extends Bot {
     postDescription = undefined;
     postImage = undefined;
     postState = undefined;
+    postStart = undefined;
   };
 
   static botname = 'Freedaa';
@@ -65,7 +32,8 @@ export default class Freedaa extends Bot {
   static adapterTypes = {
     setUserNotificationOption: Types.Async.any(),
     getUserNotificationOption: Types.Async.any({notifications: Boolean}),
-    getAddressFromCoordinates: Types.Async.parse({address: String}),
+    getAddressFromCoordinates: Types.Async.any(),
+    getSass: Types.Async.any(),
     addPost: Types.Async.any({
       id: String,
       description: String,
@@ -78,6 +46,8 @@ export default class Freedaa extends Bot {
       location: Object,
       views: Number
     }),
+    parseTime: Types.Async.any(),
+    getCurrentTime: Types.Async.any(),
     removePost: Types.Async.any(),
     getPosts: Types.Async.parseArray({
       id: String,
@@ -103,28 +73,15 @@ export default class Freedaa extends Bot {
     const post = await adapters.getPost(id);
 
     return {
-      text: 'Your post has been verified!',
-      cards: [this._formatPostToCard(post, [{
-        text: 'Delete',
-        data: {action: 'delete', post: post.id}
-      }])]
+      elements: [
+        {text: 'Your post has been verified!'},
+        this._formatPostToCard(post, [{text: 'Delete', data: {action: 'delete', post: post._id}}])
+      ]
     };
   }
 
   async onNotifyUserOnPostView({first}) {
-    return {text: `${first} just viewed your post`};
-  }
-
-  _formatPostToCard(post, options = [
-    {text: 'Location', data: {action: 'location', post: post.id}},
-    {text: 'Report', data: {action: 'report', post: post.id}}
-  ]) {
-    return {
-      text: post.description,
-      subtext: `${moment(post.start).format('LT')} - ${moment(post.end).format('LT')} · ${post.views} views`,
-      image: post.image,
-      options
-    };
+    return {elements: [{text: `${first} just viewed your post`}]};
   }
 
   async onInput({text = '', optin = false, images, location, data = {}}, {first}) {
@@ -138,9 +95,9 @@ export default class Freedaa extends Bot {
             process: async() => {
               try {
                 await adapters.removePost(data.post);
-                return wrap({text: 'Your post has been deleted'});
+                return {output: {elements: [{text: 'Your post has been deleted'}]}};
               } catch (e) {
-                return wrap({text: 'Your post has already been deleted'});
+                return {output: {elements: [{text: 'Your post has already been deleted'}]}};
               }
             }
           },
@@ -152,20 +109,20 @@ export default class Freedaa extends Bot {
             test: [data.action === 'notifications'],
             process: async() => {
               adapters.setUserNotificationOption(context.uid, data.value);
-              return wrap({text: 'I will hit you up then. Just type "notify" if you change your mind'});
+              return {output: {elements: [{text: 'I will hit you up then. Just type "notify" if you change your mind'}]}};
             }
           },
           notificationsDisable: {
             test: [data.action === 'notifications'],
             process: async() => {
               adapters.setUserNotificationOption(context.uid, data.value);
-              return wrap({text: 'I will hit you up then. Just type "notify" if you change your mind'});
+              return {output: {elements: [{text: 'I will hit you up then. Just type "notify" if you change your mind'}]}};
             }
           },
           tooHungry: {
             test: [context.started,
               async() => (await tdiff('i want free food, i\'m hungry', text.toLowerCase())) > 0.6],
-            process: async() => wrap({text: 'Yappers. Send me your location.'})
+            process: async() => ({output: {elements: [{text: 'Yappers. Send me your location.'}]}})
           },
           location: {
             test: [!!location, context.started],
@@ -173,32 +130,41 @@ export default class Freedaa extends Bot {
               context.time = Date.now();
               context.location = location;
               actions.onUserLocationChange(context.uid, location);
-              const {address} = await adapters.getAddressFromCoordinates([location.lat, location.long]);
-              return wrap({
-                card: {
-                  text: `${first}, looks like you are located on ${address}.`,
-                  options: [
-                    {data: {ns: Freedaa.State.SEARCH}, text: 'Find food around me'},
-                    {data: {ns: Freedaa.State.SUBMIT}, text: 'I spotted free food'}
-                  ]
+
+              return {
+                output: {
+                  elements: [{
+                    text: `${first}, what would you like to do?.`,
+                    buttons: [
+                      {data: {ns: Freedaa.State.SEARCH}, text: 'Find food around me'},
+                      {data: {ns: Freedaa.State.SUBMIT}, text: 'I spotted free food'}
+                    ]
+                  }]
                 }
-              });
+              };
             }
           },
           getPostLocation: {
-            test: [data.action === 'location', !!data.post],
+            test: [data.action === 'lead', !!data.post],
             process: async() => {
               try {
                 const {location: _location} = await adapters.getPost(data.post);
-                const {address} = await adapters.getAddressFromCoordinates(_location);
+                const address = await adapters.getAddressFromCoordinates(_location);
 
                 actions.onPostView(data.post, context.uid);
 
-                return wrap({text: `Located at ${address}`});
+                return {output: {elements: [{text: `Located at ${address}`}]}};
               } catch (e) {
                 console.error(e);
-                return wrap({text: 'Post has been deleted :('});
+                return {output: {elements: [{text: 'Post has been deleted :('}]}};
               }
+            }
+          },
+          reportPost: {
+            test: [data.action === 'report', !!data.post],
+            process: async() => {
+              console.warn('!REPORT!', data.post);
+              return {output: {elements: [{text: 'The post has been reported for review.'}]}};
             }
           },
           goToSearch: {
@@ -210,61 +176,56 @@ export default class Freedaa extends Bot {
             transitionTo: data.ns
           },
           quit: {
-            test: /^(quit|clear|reset)/ig,
-            process: async() => wrap({text: 'Ok'}),
+            test: /^(quit|clear|reset|exit|end)/ig,
+            process: async() => ({output: {elements: {text: 'Ok'}}}),
             transitionTo: Freedaa.State.SASSY
           },
           help: {
             test: /^help$/ig,
-            process: async() => wrap({text: 'Just send me your location to begin.'})
+            process: async() => ({output: {elements: [{text: 'Just send me your location to begin.'}]}})
           },
           checkOptin: {
             test: [context.started, !!optin],
-            process: async() => wrap({text: 'You are already signed up! Just send me your location to begin.'})
+            process: async() => ({output: {elements: [{text: 'You are already signed up! Just send me your location to begin.'}]}})
           }
         }
       },
       [Freedaa.State.SEARCH]: {
         process: async() => {
-          const posts = await adapters.getPosts(context.location);
-          const {address} = await adapters.getAddressFromCoordinates([context.location.lat, context.location.long]);
+          const currTime = await adapters.getCurrentTime(context.location);
+          const posts = await adapters.getPosts(context.location, currTime);
+          const address = await adapters.getAddressFromCoordinates([context.location.lat, context.location.long]);
 
           if (!posts.length) {
             const {notifications} = await adapters.getUserNotificationOption(context.uid);
 
             if (!notifications) {
               return {
-                ...wrap({
-                  cards: [{
+                output: {
+                  elements: [{
                     text: `Sorry, I can't seem to find any food around you :( Do you want me to let you know when
                     someone finds free found?`,
-                    options: [{text: 'Yeah! Notify me', data: {action: 'notifications', value: true}}]
+                    buttons: [{text: 'Yeah! Notify me', data: {action: 'notifications', value: true}}]
                   }]
-                })
+                }
               };
             }
 
-            return {
-              ...wrap({
-                text: `Sorry, I can't seem to find any food around you - ${address} :(`
-              })
-            };
+            return {output: {elements: [{text: `Sorry, I can't seem to find any food around you - ${address} :(`}]}};
           }
 
-          const cards = posts.map(post => this._formatPostToCard(post));
-
-          return wrap({cards});
+          return {output: {elements: posts.map(post => this._formatPostToCard(post))}};
         },
         transitionTo: Freedaa.State.SASSY
       },
       [Freedaa.State.NOTIFICATIONS]: {
-        process: async() => wrap({text: 'Do you want me to notify you if someone finds free food near you?'}),
+        process: async() => ({output: {elements: [{text: 'Do you want me to notify you if someone finds free food near you?'}]}}),
         transitions: {
           notifyMe: {
             test: /^(yes|yeah|yah|yee*?|y|yay*?)/ig,
             process: async() => {
               adapters.setUserNotificationOption(context.uid, true);
-              return wrap({text: 'I will hit you up then. Just type "notify" if you change your mind'});
+              return {output: {elements: [{text: 'I will hit you up then. Just type "notify" if you change your mind'}]}};
             },
             transitionTo: Freedaa.State.SASSY
           },
@@ -272,18 +233,18 @@ export default class Freedaa extends Bot {
             test: /^(no|don'?t|nah*?|nay*?|n)/ig,
             process: async() => {
               adapters.setUserNotificationOption(context.uid, false);
-              return wrap({text: 'Ok. Just type "notify" if you change your mind'});
+              return {output: {elements: [{text: 'Ok. Just type "notify" if you change your mind'}]}};
             },
             transitionTo: Freedaa.State.SASSY
           },
           [FALLBACK]: {
-            process: async() => wrap({text: 'Didn\'t really get you there. Yay or nay?'})
+            process: async() => ({output: {elements: [{text: 'Didn\'t really get you there. Yay or nay?'}]}})
           }
         }
       },
       [Freedaa.State.SUBMIT]: {
         process: async() => {
-          const {address} = await adapters.getAddressFromCoordinates([context.location.lat, context.location.long]);
+          const address = await adapters.getAddressFromCoordinates([context.location.lat, context.location.long]);
 
           context.postLocation = context.location;
           context.postDescription = null;
@@ -291,86 +252,123 @@ export default class Freedaa extends Bot {
           context.postImage = null;
           context.postAddress = address;
           context.postState = 'description';
+          context.postStart = null;
 
-          return wrap({
-            text: `✓ Location: ${context.postAddress}\\n
-            ▸ Description\\n
-            □ Picture\\n
-            □ Time\\n\\n
-
-            Tell me more about the food and its location`
-          });
+          return {
+            output: {
+              elements: [{text: `Where is the free food?`}],
+              options: [address, 'Location doesn\'t matter']
+            }
+          };
         },
         transitions: {
           addDescriptionThenRequestImage: {
             test: [!!text, !context.postDescription],
             process: async() => {
-              const updated = !!context.postDescription;
               context.postDescription = text;
               context.postState = 'image';
 
-              if (updated) {
-                return wrap({text: 'Ok I updated the description. Ok now I need that picture'});
-              }
-
-              return wrap({
-                text: `✓ Location: ${context.postAddress}\\n
+              return {
+                output: {
+                  elements: [{
+                    text: `✓ Location: ${context.postAddress}\\n
                 ✓ Description: ${context.postDescription}\\n
                 ▸ Picture\\n
-                □ Time\\n\\n
+                □ Start\\n
+                □ End\\n\\n
 
                 Yum! Now I just need a picture.`
-              });
+                  }]
+                }
+              };
             }
           },
-          addImageThenRequestPeriod: {
+          addImageThenRequestStart: {
             test: [!!images, !context.postImage, !!context.postDescription],
             process: async() => {
               context.postImage = images[0];
-              context.postState = 'period';
+              context.postState = 'start';
 
-              return wrap({
-                text: `✓ Location: ${context.postAddress}\\n
+              return {
+                output: {
+                  elements: [{
+                    text: `✓ Location: ${context.postAddress}\\n
                 ✓ Description: ${context.postDescription}\\n
                 ✓ Picture\\n
-                ▸ Time\\n\\n
+                ▸ Start\\n
+                □ End\\n\\n
 
-                Ok soo close. Let me know a START and END time e.g. between 10 and 11 am`
-              });
+                Let me know a START time e.g. 11 am`
+                  }]
+                }
+              };
             }
           },
-          addPeriodAndFinalize: {
-            test: [!!text, !!context.postDescription, !!context.postImage],
+          addStartThenRequestEnd: {
+            test: [!!text, !!context.postDescription, !!context.postImage, !context.postStart],
             process: async() => {
-              let start;
-              let end;
+              let date;
+              const dates = await adapters.parseTime(text);
 
               try {
-                const {body: {dates, error}} = await fetch('http://natty.joestelmach.com/parse', {
-                  json: true,
-                  method: 'post',
-                  headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'},
-                  body: `value=${encodeURIComponent(text.replace(/^today/i, ''))}`
-                });
-
-                if (error) {
-                  throw error;
-                } else if (dates.length === 2) {
-                  start = new Date(new Date(dates[0]).getTime() + UTC_OFFSET);
-                  end = new Date(new Date(dates[1]).getTime() + UTC_OFFSET);
+                if (dates.length) {
+                  date = dates[0];
                 }
               } catch (e) {
                 throw new TraceError('Could not parse date', e);
               }
 
-              if (!end) {
-                return wrap({text: 'Looks like your missing an end time. I need a START and END time'});
-              } else if (end - start > HOUR * 5) {
-                return wrap({text: 'This event lasts wayyy too long! Is this a real event?'});
-              } else if (start > new Date(Date.now() + UTC_OFFSET + HOUR * 24)) {
-                return wrap({text: 'Sucks to suck! Remind me when it gets closer.'});
-              } else if (end < new Date()) {
-                return wrap({text: 'Wait. This event already finished? Let\'s try again. START and END time please'});
+              const currTime = await adapters.getCurrentTime(context.location);
+
+              if (/(now)/gi.test(text)) {
+                date = currTime;
+              }
+
+              if (date.getTime() < currTime.getTime()) {
+                return {output: {text: 'This event already happened...'}}
+              }
+
+              if (date.getTime() > new Date(currTime.getTime() + 60 * 60 * 1000 * 24)) {
+                return {output: {text: 'You cannot make a post this early'}};
+              }
+
+              context.postStart = date;
+
+              return {
+                output: {
+                  elements: [{
+                    text: `✓ Location: ${context.postAddress}\\n
+                ✓ Description: ${context.postDescription}\\n
+                ✓ Picture\\n
+                ✓ Start: ${moment(date).calendar()}\\n
+                ▸ End\\n\\n
+
+                Ok soo close. Let me know a END time e.g. 11 am`
+                  }]
+                }
+              };
+            }
+          },
+          addEndTimeAndFinalize: {
+            test: [!!text, !!context.postDescription, !!context.postImage, !!context.postStart],
+            process: async() => {
+              let date;
+              const dates = await adapters.parseTime(text);
+
+              try {
+                if (dates.length) {
+                  date = dates[0];
+                }
+              } catch (e) {
+                throw new TraceError('Could not parse date', e);
+              }
+
+              if (context.postStart >= date.getTime()) {
+                return {output: {text: 'The end time is before the start time'}}
+              }
+
+              if (date.getTime() - context.postStart > 60 * 60 * 1000 * 5) {
+                return {output: {text: 'You cannot make a post that lasts > 5 hours'}};
               }
 
               try {
@@ -378,22 +376,22 @@ export default class Freedaa extends Bot {
                   location: context.postLocation,
                   description: context.postDescription,
                   image: context.postImage,
-                  start, end
+                  start: context.postStart,
+                  end: date
                 });
 
                 return {
-                  ...wrap({
-                    text: 'You are all set! We will notify you when your post is verified.',
-                    cards: [this._formatPostToCard(post, [{
-                      text: 'Delete',
-                      data: {action: 'delete', post: post.id}
-                    }])]
-                  }),
+                  output: {
+                    elements: [
+                      {text: 'You are all set! We will notify you when your post is verified.'},
+                      this._formatPostToCard(post, [{text: 'Delete', data: {action: 'delete', post: post._id}}])
+                    ]
+                  },
                   transitionTo: Freedaa.State.SASSY
                 };
               } catch (e) {
-                console.tag(TAG, 'addPeriodAndFinalize').error(e);
-                return wrap({text: 'I think you broke us!'});
+                console.error(e);
+                return {output: {elements: [{text: 'I think you broke us!'}]}};
               }
             }
           },
@@ -401,10 +399,10 @@ export default class Freedaa extends Bot {
             process: async() => {
               const state = context.postState;
               if (state === 'description' || state === 'period') {
-                return wrap({text: 'I need a text input'});
+                return {output: {elements: [{text: 'I need a text input'}]}};
               }
 
-              return wrap({text: 'Send me a picture'});
+              return {output: {elements: [{text: 'Send me a picture'}]}};
             }
           }
         }
@@ -413,11 +411,11 @@ export default class Freedaa extends Bot {
         transitions: {
           sassy: {
             test: !!text,
-            process: async() => wrap({text: await getSass(text, first)})
+            process: async() => ({output: {elements: {text: await adapters.getSass(text, first)}}})
           },
-          imageUnaccepted: {
+          imageRejection: {
             test: !!images,
-            process: async() => wrap({text: 'Sending me photos. Por que?'})
+            process: async() => ({output: {elements: [{text: 'Sending me photos. Por que?'}]}})
           }
         }
       },
@@ -428,10 +426,12 @@ export default class Freedaa extends Bot {
             process: async() => {
               await actions.onUserOnboard(context.uid); // FIXME user should be created on read/write context
               context.started = true;
-              return wrap({
-                text: [`Hey ${first}, my name is Freedaa and I can help you find free food around you.`,
-                  'Send me your location to begin.']
-              });
+              return {
+                output: {
+                  text: [`Hey ${first}, my name is Freedaa and I can help you find free food around you.`,
+                    'Send me your location to begin.']
+                }
+              };
             }
           },
           tutorialLocation: {
@@ -439,54 +439,61 @@ export default class Freedaa extends Bot {
             transitionTo: PROXY
           },
           [FALLBACK]: {
-            process: async() =>
-              wrap({
+            process: async() => ({
+              output: {
                 text: `In the Messenger app, to send me a location - click the pin icon at the bottom.
                   Unfortunately, you cannot send a location from the website.`
-              })
+              }
+            })
           }
         }
       },
       [CATCH]: {
         process: async e => {
           console.error(e);
-          return wrap({text: `Ummm. I think you broke us: ${e.message.substr(0, 200)}`});
+          return {output: {elements: [{text: `Ummm. I think you broke us: ${e.message.substr(0, 200)}`}]}};
         }
       },
       [FALLBACK]: {
         transitions: {
           help: {
             test: /^\/help$/,
-            process: async() => 'Help!'
+            process: async() => ({output: {elements: [{text: 'Help!'}]}})
           }
         }
       }
-    }, this.context.state, text || '', this);
+    }, this.context.state, text, this);
 
     const {output, next} = result;
 
     this.context.state = next;
 
-    if (output && output.card) {
-      output.cards = [output.card];
-      delete output.card;
-    }
-
-    if (output.cards) {
-      for (const card of output.cards) {
-        if (card.text) card.text = this._flattenText(card.text);
-        if (card.subtext) card.subtext = this._flattenText(card.subtext);
+    if (output && output.elements) {
+      for (const element of output.elements) {
+        if (element.text) element.text = this._flattenText(element.text);
+        if (element.subtext) element.subtext = this._flattenText(element.subtext);
       }
     }
 
-    if (output && output.text) {
-      const texts = Array.isArray(output.text) ? output.text : [output.text];
-      output.texts = texts.map(t => this._flattenText(t));
-
-      delete output.text;
+    if (output && output.options) {
+      for (const option of output.options) {
+        if (option.text) option.text = this._flattenText(option.text);
+      }
     }
 
     return output;
+  }
+
+  _formatPostToCard(post, buttons = [
+    {text: 'I want this food!', data: {action: 'lead', post: post._id}},
+    {text: 'Report', data: {action: 'report', post: post._id}}
+  ]) {
+    return {
+      text: post.description,
+      subtext: `${moment(post.start).format('LT')} - ${moment(post.end).format('LT')} · ${post.views} views`,
+      image: post.image,
+      buttons
+    };
   }
 
   _flattenText(t) {

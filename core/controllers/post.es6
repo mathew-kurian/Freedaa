@@ -1,12 +1,12 @@
 import * as Post from '../models/post.es6';
 import Bus, {Events} from '../dispatchers/main-bus.es6';
 
-export async function createPost(userId, {description, coordinates, image, start, end}) {
-  return await Post.create(String(userId), {description, coordinates, image, start, end});
+export async function createPost(uid, {description, location, image, start, end}) {
+  return await Post.create(String(uid), {description, location, image, start, end});
 }
 
-export async function findActivePosts(coordinates, count = 10) {
-  let posts = await Post.findByLocation(coordinates, 2, true);
+export async function findActivePosts(location, date, count = 10) {
+  let posts = await Post.findByLocation(location, 2, date, true);
 
   if (posts.length < count) {
     posts = posts.concat(await Post.find({national: true}, true));
@@ -38,7 +38,7 @@ export async function getPost(id) {
 }
 
 export async function getPosts() {
-  return await Post.find();
+  return await Post.find({}, false);
 }
 
 export async function removePost(id, reason) {

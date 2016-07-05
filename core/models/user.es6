@@ -1,8 +1,8 @@
 import User from '../../models/user.es6';
 import {stripUndefNull} from '../../libs/utils.es6';
 
-export async function createUser(userId, {first, last, email, context}) {
-  return await User.create({userId, first, last, email, context});
+export async function create(uid, {first, last, email, context}) {
+  return await (new User({uid, first, last, email, context}).save());
 }
 
 export async function find(attrs = {}) {
@@ -13,9 +13,9 @@ export async function findOne(attrs = {}) {
   return await (User.findOne({...attrs, deleted: false}).exec());
 }
 
-export async function findByIdAndUpdate(userId, attrs = {}) {
+export async function findByIdAndUpdate(uid, attrs = {}) {
   delete attrs._id;
-  delete attrs.userId;
+  delete attrs.uid;
   attrs = stripUndefNull(attrs);
-  return await (User.findOneAndUpdate({userId}, {$set: attrs}).exec());
+  return await (User.findOneAndUpdate({uid}, {$set: attrs}).exec());
 }

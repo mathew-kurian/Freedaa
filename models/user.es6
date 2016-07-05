@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const {Schema} = mongoose;
 
 const userSchema = new Schema({
-  userId: {type: String, index: true, required: true, unique: true},
+  uid: {type: String, index: true, required: true, unique: true},
   deleted: {type: Boolean, default: false},
   first: String,
   last: String,
@@ -13,4 +13,4 @@ const userSchema = new Schema({
   context: Object
 });
 
-export default mongoose.model('User', userSchema);
+export default mongoose.model('user', userSchema);

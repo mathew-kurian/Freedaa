@@ -30,6 +30,8 @@ export function apply(elem, styles) {
   }
 }
 
+export const IS_IOS = /iPad|iPhone|iPod/.test(navigator.platform);
+
 export function useTouchEventsForClick() {
   if (IS_IOS) {
     tapInject();

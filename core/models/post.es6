@@ -1,28 +1,28 @@
 import Post from '../../models/post.es6';
 
-export async function create(userId, {description, coordinates: {lat, long}, start, end, image}) {
-  return await (new Post({userId, description, coordinates: [lat, long], image, start, end}).save());
+export async function create(uid, {description, location: {lat, long}, start, end, image}) {
+  return await (new Post({uid, description, location: [lat, long], image, start, end}).save());
 }
 
-export async function findByLocation({lat, long}, radiusKm, valid = true) {
+export async function findByLocation({lat, long}, radiusKm, date, valid = true) {
   try {
-    await (Post.update(valid ? {verified: true, deleted: false, end: {$gt: new Date()}} :
-               {deleted: false}, {$inc: {views: 1}}, {multi: true, new: true})
-               .where('coordinates')
-               .near({
-                 center: [lat, long],
-                 maxDistance: radiusKm / 111.12
-               }).lean().exec());
+    await (Post.update(valid ? {verified: true, deleted: false, end: {$gt: new Date(date)}} :
+    {deleted: false}, {$inc: {views: 1}}, {multi: true, new: true})
+      .where('location')
+      .near({
+        center: [lat, long],
+        maxDistance: radiusKm / 111.12
+      }).lean().exec());
   } catch (e) {
     // ignore
   }
 
-  return await (Post.find(valid ? {verified: true, deleted: false, end: {$gt: new Date()}} : {})
-                    .where('coordinates')
-                    .near({
-                      center: [lat, long],
-                      maxDistance: radiusKm / 111.12
-                    }).lean().exec());
+  return await (Post.find(valid ? {verified: true, deleted: false, end: {$gt: new Date(date)}} : {})
+    .where('location')
+    .near({
+      center: [lat, long],
+      maxDistance: radiusKm / 111.12
+    }).lean().exec());
 }
 
 export async function findById(id) {

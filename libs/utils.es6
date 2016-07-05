@@ -13,6 +13,10 @@ export class TraceError extends BaseTraceError {
     const stack = this.stack;
     return {TraceError: stack.substring(stack.indexOf(':') + 2)};
   }
+
+  toString() {
+    return this.stack;
+  }
 }
 
 export function stripUndefNull(obj) {

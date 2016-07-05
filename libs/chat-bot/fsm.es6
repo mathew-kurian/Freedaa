@@ -1,5 +1,3 @@
-const debug = true;
-
 export const FALLBACK = '__FALLBACK__';
 export const CATCH = '__CATCH__';
 export const PROXY = '__PROXY__';
@@ -89,7 +87,7 @@ export async function step(states, last, input) {
 
   // check the proxy
   if (state) {
-    if (debug) console.log('Attempt PROXY.transitions');
+    console.log('Attempt PROXY.transitions');
 
     let attempt;
 
@@ -108,7 +106,7 @@ export async function step(states, last, input) {
 
     // check for an output
     if (!output && next && state) {
-      if (debug) console.log('Attempt transitionTo', next);
+      console.log('Attempt transitionTo', next);
 
       try {
         attempt = await execTransition(next, state, input);
@@ -127,7 +125,7 @@ export async function step(states, last, input) {
 
   // check last state transition options
   if (!next && !output && state) {
-    if (debug) console.log('Attempt LAST_STATE.transitions');
+    console.log('Attempt LAST_STATE.transitions');
 
     let attempt;
 
@@ -146,7 +144,7 @@ export async function step(states, last, input) {
 
     // check for an output
     if (!output && next && state) {
-      if (debug) console.log('Attempt transitionTo', next);
+      console.log('Attempt transitionTo', next);
 
       try {
         attempt = await execTransition(next, state, input);
@@ -165,7 +163,7 @@ export async function step(states, last, input) {
 
   // fallback the global FALLBACK
   if (!next && !output && state) {
-    if (debug) console.log('Attempt FALLBACK.transitions');
+    console.log('Attempt FALLBACK.transitions');
 
     let attempt;
 
@@ -184,7 +182,7 @@ export async function step(states, last, input) {
 
     // check for an output
     if (!output && next && state) {
-      if (debug) console.log('Attempt transitionTo', next);
+      console.log('Attempt transitionTo', next);
 
       try {
         attempt = await execTransition(next, state, input);
@@ -208,7 +206,7 @@ export async function step(states, last, input) {
 
   // rerun the existing state
   if (!output && next && state) {
-    if (debug) console.log('Attempt LAST_STATE.process', next);
+    console.log('Attempt LAST_STATE.process', next);
 
     let attempt;
 
@@ -227,7 +225,7 @@ export async function step(states, last, input) {
 
     // check for an output
     if (!output && next && state) {
-      if (debug) console.log('Attempt transitionTo', next);
+      console.log('Attempt transitionTo', next);
 
       try {
         attempt = await execTransition(next, state, input);
@@ -242,8 +240,8 @@ export async function step(states, last, input) {
     }
   }
 
-  if (debug) console.log(`Stepped ${last} → ${next}`);
-  if (debug) console.log('Output', output);
+  console.log(`Stepped ${last} → ${next}`);
+  console.log('Output', output);
 
   return {next, output};
 }

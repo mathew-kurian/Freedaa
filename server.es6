@@ -18,7 +18,7 @@ const app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-app.use(morgan('combined'));
+app.use(morgan('tiny'));
 app.use(compression());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
@@ -28,5 +28,10 @@ app.use('/post', post);
 app.use('/facebook', facebook);
 
 app.listen(config.get('Port'), () => {
-    console.log('Listening');
+  console.log('Listening on ' + config.get('Port'));
+});
+
+process.on('uncaughtException', err => {
+  console.log(err);
+  process.exit(1);
 });
