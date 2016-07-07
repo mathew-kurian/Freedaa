@@ -38,19 +38,25 @@ async function findAndExecTransitions(state, input) {
     for (const [key, transition] of Object.entries(transitions)) {
       console.log(` · Test ${key}`);
 
-      const test = transition.test;
-      const tests = Array.isArray(test) ? test : [test];
+      let pass;
+      if (key === FALLBACK) {
+        pass = true;
+      } else {
+        const test = transition.test;
+        const tests = Array.isArray(test) ? test : [test];
 
-      let pass = !!test || key === FALLBACK;
-      for (const t of tests) {
-        if (typeof t === 'function') {
-          pass &= await t(input);
-        } else if (typeof t === 'boolean') {
-          pass &= t;
-        } else if (t instanceof RegExp) {
-          pass &= typeof input === 'string' && t.test(input);
-        } else if (t !== CATCH) {
-          pass &= true;
+        pass = !!test || key === FALLBACK;
+
+        for (const t of tests) {
+          if (typeof t === 'function') {
+            pass &= await t(input);
+          } else if (typeof t === 'boolean') {
+            pass &= t;
+          } else if (t instanceof RegExp) {
+            pass &= typeof input === 'string' && t.test(input);
+          } else if (t !== CATCH) {
+            pass &= !!t;
+          }
         }
       }
 

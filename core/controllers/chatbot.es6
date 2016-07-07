@@ -9,6 +9,8 @@ import imgur from 'imgur';
 import * as User from './user.es6';
 import CleverBot from 'cleverbot.io';
 import fetch from '../../libs/fetch.es6';
+import Mitsuku from '../../libs/Mitsuku.es6';
+import google from 'google';
 
 export default class MongoContextStore extends ContextStore {
   async read(uid) {
@@ -26,12 +28,17 @@ export default class MongoContextStore extends ContextStore {
   }
 }
 
+const mitsuku = new Mitsuku({name: 'Freedaa'});
 const dispatcher = new ChatBotDispatcher(new MongoContextStore());
 const bot = new Bot(config.get('Facebook.accessToken'));
-const geocoder = createGeoCoder('google', 'https', {
+const geocoderString = createGeoCoder('google', 'https', {
   apiKey: config.get('Google.key'),
   formatter: 'string',
   formatterPattern: '%n %S in %c'
+});
+
+const geocoder = createGeoCoder('google', 'https', {
+  apiKey: config.get('Google.key')
 });
 
 imgur.setCredentials(config.get('Imgur.email'), config.get('Imgur.password'), config.get('Imgur.clientId'));
@@ -101,9 +108,32 @@ dispatcher.registerBot(Freedaa, {
     }
   }
 }, {
+  async getCoordinatesFromAddress(text) {
+    // return new Promise((resolve, reject) => {
+    //   google(text, async(err, res) => {
+    //     if (err) {
+    //       console.log(err);
+    //       return reject(err);
+    //     }
+    //
+    //     for (let i = 0; i < res.links.length; ++i) {
+    //       if (/, [A-Z]{2} [0-9]{5}$/gi.test(res.links[i].title)) {
+    //         const addr = await geocoder.geocode(res.links[i].title);
+    //
+    //         return resolve({lat: addr[0].latitude, long: addr[0].longitude});
+    //       }
+    //     }
+    //
+    //     return reject(new Error('Not a valid address'));
+    //   });
+    // });
+
+    const addr = await geocoder.geocode(text);
+    return {lat: addr[0].latitude, long: addr[0].longitude};
+  },
   async getAddressFromCoordinates([lat, long]) {
     return new Promise((resolve, reject) => {
-      geocoder.reverse({lat, lon: long}, (err, address) => {
+      geocoderString.reverse({lat, lon: long}, (err, address) => {
         if (err) {
           reject(err);
           return;
@@ -141,26 +171,30 @@ dispatcher.registerBot(Freedaa, {
     }
   },
   async getSass(input, tag = null) {
-    const cleverbot = new CleverBot('jSNrlROQLe2mO64c', 'vhxWWCBZxfjSxW4zvZoVmqmFLWl3qJxh');
-    cleverbot.setNick(tag);
+    try {
+      return await mitsuku.send(input);
+    } catch (e) {
+      const cleverbot = new CleverBot('jSNrlROQLe2mO64c', 'vhxWWCBZxfjSxW4zvZoVmqmFLWl3qJxh');
+      cleverbot.setNick(tag);
 
-    return new Promise((resolve, reject) => {
-      cleverbot.create(function (err) {
-        if (err) {
-          console.error(err);
-          return reject(err);
-        }
-
-        cleverbot.ask(input, function (err, text) {
+      return new Promise((resolve, reject) => {
+        cleverbot.create(function (err) {
           if (err) {
             console.error(err);
             return reject(err);
           }
 
-          resolve(text);
+          cleverbot.ask(input, function (err, text) {
+            if (err) {
+              console.error(err);
+              return reject(err);
+            }
+
+            resolve(text);
+          });
         });
       });
-    });
+    }
   },
   async addPost(uid, {location, start, end, description, image, national}) {
     try {

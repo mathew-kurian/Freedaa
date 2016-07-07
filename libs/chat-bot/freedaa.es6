@@ -7,7 +7,7 @@ import tdiff from '../tdiff.es6';
 export default class Freedaa extends Bot {
   static Context = class extends Context {
     state = Freedaa.State.START;
-    started = undefined;
+    started = false;
     location = undefined;
     time = undefined;
     postLocation = undefined;
@@ -32,6 +32,7 @@ export default class Freedaa extends Bot {
   static adapterTypes = {
     setUserNotificationOption: Types.Async.any(),
     getUserNotificationOption: Types.Async.any({notifications: Boolean}),
+    getCoordinatesFromAddress: Types.Async.parse({lat: Number, long: Number}),
     getAddressFromCoordinates: Types.Async.any(),
     getSass: Types.Async.any(),
     addPost: Types.Async.any({
@@ -88,6 +89,15 @@ export default class Freedaa extends Bot {
   async onInput({text = '', optin = false, images, location, data = {}}, {first}) {
     const {context, actions, adapters} = this;
 
+    if (/(^\d{5}$)|(^\d{5}-\d{4}$)/.test(text)) {
+      try {
+        location = await adapters.getCoordinatesFromAddress(text);
+        text = '';
+      } catch (e) {
+        // ignore
+      }
+    }
+
     const result = await step({
       [PROXY]: {
         transitions: {
@@ -123,7 +133,7 @@ export default class Freedaa extends Bot {
           tooHungry: {
             test: [context.started,
               async() => (await tdiff('i want free food, i\'m hungry', text.toLowerCase())) > 0.6],
-            process: async() => ({output: {elements: [{text: 'Yappers. Send me your location.'}]}})
+            process: async() => ({output: {elements: [{text: 'Yappers. Send me your location or enter your zip code.'}]}})
           },
           location: {
             test: [!!location, context.started],
@@ -141,7 +151,8 @@ export default class Freedaa extends Bot {
                       {data: {ns: Freedaa.State.SUBMIT}, text: 'I spotted free food'}
                     ]
                   }]
-                }
+                },
+                transitionTo: Freedaa.State.SASSY
               };
             }
           },
@@ -182,7 +193,7 @@ export default class Freedaa extends Bot {
           },
           quit: {
             test: /^(quit|clear|reset|exit|end)/ig,
-            process: async() => ({output: {elements: {text: 'Ok'}}}),
+            process: async() => ({output: {elements: [{text: 'Ok'}]}}),
             transitionTo: Freedaa.State.SASSY
           },
           help: {
@@ -326,14 +337,17 @@ export default class Freedaa extends Bot {
             test: [!!text, !!context.postDescription, !!context.postImage, !context.postStart],
             process: async() => {
               let date;
-              const dates = await adapters.parseTime(text);
 
               try {
+                const dates = await adapters.parseTime(text);
+
                 if (dates.length) {
                   date = dates[0];
                 }
               } catch (e) {
-                throw new TraceError('Could not parse date', e);
+                console.log(e);
+
+                throw new TraceError('Could not understand the date');
               }
 
               const currTime = await adapters.getCurrentTime(context.location);
@@ -360,19 +374,26 @@ export default class Freedaa extends Bot {
             test: [!!text, !!context.postDescription, !!context.postImage, !!context.postStart],
             process: async() => {
               let date;
-              const dates = await adapters.parseTime(text);
 
               try {
+                const dates = await adapters.parseTime(text);
+
                 if (dates.length) {
                   date = dates[0];
                 }
               } catch (e) {
-                throw new TraceError('Could not parse date', e);
+                console.log(e);
+
+                throw new TraceError('Could not understand the date');
               }
 
               if (context.postStart >= date.getTime()) {
                 return {output: {elements: [{text: 'The end time is before the start time'}]}}
               }
+
+              // if (date.getTime() - context.postStart < 60 * 1000 * 5) {
+              //  return {output: {elements: [{text: `This event is less than 5 minutes?`}]}};
+              // }
 
               if (date.getTime() - context.postStart > 60 * 60 * 1000 * 24 * 5) {
                 return {output: {elements: [{text: 'You cannot make a post that lasts > 5 days'}]}};
@@ -437,8 +458,11 @@ export default class Freedaa extends Bot {
               context.started = true;
               return {
                 output: {
-                  text: [`Hey ${first}, my name is Freedaa and I can help you find free food around you.`,
-                    'Send me your location to begin.']
+                  elements: [
+                    {text: `Hey ${first}, my name is Freedaa and I can help you find free food around you.`},
+                    null,
+                    {text: 'Send me your location to begin or enter your zipcode.'}
+                  ]
                 }
               };
             }
@@ -448,18 +472,13 @@ export default class Freedaa extends Bot {
             transitionTo: PROXY
           },
           [FALLBACK]: {
-            process: async() => ({
-              output: {
-                text: `In the Messenger app, to send me a location - click the pin icon at the bottom.
-                  Unfortunately, you cannot send a location from the website.`
-              }
-            })
+            process: async() => ({output: {elements: [{text: `Send me a location pin or enter your zipcode.`}]}})
           }
         }
       },
       [CATCH]: {
         process: async e => {
-          console.error(e);
+          console.log(e.stack);
           return {output: {elements: [{text: `Ummm. I think you broke us: ${e.message.substr(0, 200)}`}]}};
         }
       },
