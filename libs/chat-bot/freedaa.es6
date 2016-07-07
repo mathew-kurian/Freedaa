@@ -134,7 +134,7 @@ export default class Freedaa extends Bot {
               return {
                 output: {
                   elements: [{
-                    text: `${first}, what would you like to do?.`,
+                    text: `${first}, what would you like to do?`,
                     buttons: [
                       {data: {ns: Freedaa.State.SEARCH}, text: 'Find food around me'},
                       {data: {ns: Freedaa.State.SUBMIT}, text: 'I spotted free food'}
@@ -257,7 +257,7 @@ export default class Freedaa extends Bot {
           return {
             output: {
               elements: [{text: `Where is the free food?`}],
-              options: [address, 'Location doesn\'t matter']
+              options: [{text: address, data: {ns: 'TEST'}}, {text: 'National', data: {ns: 'TEST'}}]
             }
           };
         },

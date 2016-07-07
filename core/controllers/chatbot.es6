@@ -14,8 +14,6 @@ export default class MongoContextStore extends ContextStore {
   async read(uid) {
     const user = await User.getUserById(uid);
 
-    console.log(user);
-
     if (user) {
       return user.context;
     }
@@ -24,8 +22,6 @@ export default class MongoContextStore extends ContextStore {
   }
 
   async write(uid, context) {
-    console.log(uid, context);
-
     return await User.updateUser(uid, {context});
   }
 }
@@ -44,14 +40,20 @@ imgur.setCredentials(config.get('Imgur.email'), config.get('Imgur.password'), co
 
 async function send(id, {elements = [], options = []}) {
   for (const element of elements) {
-    const out = new Elements();
-    out.add(element);
-    out.setQuickReplies(options);
 
     try {
-      await bot.send(id, out); // eslint-disable-line babel/no-await-in-loop
+      const out = new Elements();
+      out.add(element);
+      out.setQuickReplies(options);
+
+      try {
+        await bot.send(id, out); // eslint-disable-line babel/no-await-in-loop
+      } catch (e) {
+        console.error(e);
+      }
     } catch (e) {
       console.error(e);
+      console.log(e.stack);
     }
 
     await Bot.wait(1400); // eslint-disable-line babel/no-await-in-loop

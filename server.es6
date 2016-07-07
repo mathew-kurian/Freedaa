@@ -30,8 +30,3 @@ app.use('/facebook', facebook);
 app.listen(config.get('Port'), () => {
   console.log('Listening on ' + config.get('Port'));
 });
-
-process.on('uncaughtException', err => {
-  console.log(err);
-  process.exit(1);
-});
