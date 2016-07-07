@@ -21,7 +21,7 @@ export default class Freedaa extends Bot {
   static version = 1;
 
   static Actions = keyMirror({INPUT: null, NOTIFY_USER_ON_POST_VIEW: null, NOTIFY_USER_POST_VERIFIED: null});
-  static State = keyMirror({START: null, SEARCH: null, SUBMIT: null, SASSY: null, NOTIFICATIONS: null});
+  static State = keyMirror({START: null, SEARCH: null, SUBMIT: null, SASSY: null, NOTIFICATIONS: null, POST: null});
 
   static actionTypes = {
     onUserOnboard: Types.Async.any(),
@@ -75,6 +75,7 @@ export default class Freedaa extends Bot {
     return {
       elements: [
         {text: 'Your post has been verified!'},
+        null,
         this._formatPostToCard(post, [{text: 'Delete', data: {action: 'delete', post: post._id}}])
       ]
     };
@@ -148,12 +149,16 @@ export default class Freedaa extends Bot {
             test: [data.action === 'lead', !!data.post],
             process: async() => {
               try {
-                const {location: _location} = await adapters.getPost(data.post);
-                const address = await adapters.getAddressFromCoordinates(_location);
+                const post = await adapters.getPost(data.post);
 
                 actions.onPostView(data.post, context.uid);
 
-                return {output: {elements: [{text: `Located at ${address}`}]}};
+                if (post.national) {
+                  return {output: {elements: [{text: `${post.description} - ${moment(post.start).format('MMM D LT')} to ${moment(post.end).format('MMM D LT')}`}]}};
+                } else {
+                  const address = await adapters.getAddressFromCoordinates(post.location);
+                  return {output: {elements: [{text: `${post.description} - go get it at ${address} between ${moment(post.start).format('MMM D LT')} and ${moment(post.end).format('MMM D LT')}`}]}};
+                }
               } catch (e) {
                 console.error(e);
                 return {output: {elements: [{text: 'Post has been deleted :('}]}};
@@ -253,13 +258,50 @@ export default class Freedaa extends Bot {
           context.postAddress = address;
           context.postState = 'description';
           context.postStart = null;
+          context.postNational = false;
 
           return {
             output: {
               elements: [{text: `Where is the free food?`}],
-              options: [{text: address, data: {ns: 'TEST'}}, {text: 'National', data: {ns: 'TEST'}}]
+              options: [
+                {text: 'Near me', data: {action: 'local-post'}},
+                {text: 'National', data: {action: 'national-post'}}
+              ]
             }
           };
+        },
+        transitions: {
+          isLocalDeal: {
+            test: [data.action === 'local-post'],
+            process: async() => ({transitionTo: Freedaa.State.POST})
+          },
+          isNationalDeal: {
+            test: [data.action === 'national-post'],
+            process: async() => {
+              context.postNational = true;
+              return {transitionTo: Freedaa.State.POST};
+            }
+          },
+          [FALLBACK]: {
+            process: async() => ({
+              output: {
+                elements: [{text: `Where is the free food? Gotta select one or the other :)`}],
+                options: [
+                  {text: 'Near me', data: {action: 'local-post'}},
+                  {text: 'National', data: {action: 'national-post'}}
+                ]
+              }
+            })
+          }
+        }
+      },
+      [Freedaa.State.POST]: {
+        process: async() => {
+          if (context.postNational) {
+            return {output: {elements: [{text: `Ok. Tell me about the food and how to get it!`}]}}
+          }
+
+          return {output: {elements: [{text: `Cool! I got - ${context.postAddress}. Tell me about the food and how to get it!`}]}}
         },
         transitions: {
           addDescriptionThenRequestImage: {
@@ -268,19 +310,7 @@ export default class Freedaa extends Bot {
               context.postDescription = text;
               context.postState = 'image';
 
-              return {
-                output: {
-                  elements: [{
-                    text: `✓ Location: ${context.postAddress}\\n
-                ✓ Description: ${context.postDescription}\\n
-                ▸ Picture\\n
-                □ Start\\n
-                □ End\\n\\n
-
-                Yum! Now I just need a picture.`
-                  }]
-                }
-              };
+              return {output: {elements: [{text: `Now I just need a picture.`}]}};
             }
           },
           addImageThenRequestStart: {
@@ -289,19 +319,7 @@ export default class Freedaa extends Bot {
               context.postImage = images[0];
               context.postState = 'start';
 
-              return {
-                output: {
-                  elements: [{
-                    text: `✓ Location: ${context.postAddress}\\n
-                ✓ Description: ${context.postDescription}\\n
-                ✓ Picture\\n
-                ▸ Start\\n
-                □ End\\n\\n
-
-                Let me know a START time e.g. 11 am`
-                  }]
-                }
-              };
+              return {output: {elements: [{text: `Almost done! When does it start (like 9 am or a certain date)?`}]}};
             }
           },
           addStartThenRequestEnd: {
@@ -325,28 +343,17 @@ export default class Freedaa extends Bot {
               }
 
               if (date.getTime() < currTime.getTime()) {
-                return {output: {text: 'This event already happened...'}}
+                return {output: {elements: [{text: 'This event already happened...'}]}}
               }
 
-              if (date.getTime() > new Date(currTime.getTime() + 60 * 60 * 1000 * 24)) {
-                return {output: {text: 'You cannot make a post this early'}};
+              if (date.getTime() > currTime.getTime() + 60 * 60 * 1000 * 24 * 14) {
+                return {output: {elements: [{text: 'You cannot make a post this early'}]}};
               }
 
               context.postStart = date;
 
-              return {
-                output: {
-                  elements: [{
-                    text: `✓ Location: ${context.postAddress}\\n
-                ✓ Description: ${context.postDescription}\\n
-                ✓ Picture\\n
-                ✓ Start: ${moment(date).calendar()}\\n
-                ▸ End\\n\\n
+              return {output: {elements: [{text: `Last step! When does it end (like 10 am or a certain date)?`}]}};
 
-                Ok soo close. Let me know a END time e.g. 11 am`
-                  }]
-                }
-              };
             }
           },
           addEndTimeAndFinalize: {
@@ -364,11 +371,11 @@ export default class Freedaa extends Bot {
               }
 
               if (context.postStart >= date.getTime()) {
-                return {output: {text: 'The end time is before the start time'}}
+                return {output: {elements: [{text: 'The end time is before the start time'}]}}
               }
 
-              if (date.getTime() - context.postStart > 60 * 60 * 1000 * 5) {
-                return {output: {text: 'You cannot make a post that lasts > 5 hours'}};
+              if (date.getTime() - context.postStart > 60 * 60 * 1000 * 24 * 5) {
+                return {output: {elements: [{text: 'You cannot make a post that lasts > 5 days'}]}};
               }
 
               try {
@@ -377,13 +384,15 @@ export default class Freedaa extends Bot {
                   description: context.postDescription,
                   image: context.postImage,
                   start: context.postStart,
-                  end: date
+                  end: date,
+                  national: context.postNational
                 });
 
                 return {
                   output: {
                     elements: [
                       {text: 'You are all set! We will notify you when your post is verified.'},
+                      null,
                       this._formatPostToCard(post, [{text: 'Delete', data: {action: 'delete', post: post._id}}])
                     ]
                   },
@@ -411,7 +420,7 @@ export default class Freedaa extends Bot {
         transitions: {
           sassy: {
             test: !!text,
-            process: async() => ({output: {elements: {text: await adapters.getSass(text, first)}}})
+            process: async() => ({output: {elements: [{text: await adapters.getSass(text, context.uid)}]}})
           },
           imageRejection: {
             test: !!images,
@@ -470,8 +479,10 @@ export default class Freedaa extends Bot {
 
     if (output && output.elements) {
       for (const element of output.elements) {
-        if (element.text) element.text = this._flattenText(element.text);
-        if (element.subtext) element.subtext = this._flattenText(element.subtext);
+        if (element) {
+          if (element.text) element.text = this._flattenText(element.text);
+          if (element.subtext) element.subtext = this._flattenText(element.subtext);
+        }
       }
     }
 
@@ -488,9 +499,12 @@ export default class Freedaa extends Bot {
     {text: 'I want this food!', data: {action: 'lead', post: post._id}},
     {text: 'Report', data: {action: 'report', post: post._id}}
   ]) {
+    const period = post.start - Date.now() > 60 * 60 * 1000 * 12 ?
+      moment(post.start).format('MMM D') : `${moment(post.start).format('LT')} - ${moment(post.end).format('LT')}`;
+
     return {
-      text: post.description,
-      subtext: `${moment(post.start).format('LT')} - ${moment(post.end).format('LT')} · ${post.views} views`,
+      text: `${post.national ? 'NATIONAL - ' : ''}${post.description}`,
+      subtext: `${period} · ${post.views} views`,
       image: post.image,
       buttons
     };

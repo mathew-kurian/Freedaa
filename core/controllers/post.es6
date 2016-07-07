@@ -1,15 +1,15 @@
 import * as Post from '../models/post.es6';
 import Bus, {Events} from '../dispatchers/main-bus.es6';
 
-export async function createPost(uid, {description, location, image, start, end}) {
-  return await Post.create(String(uid), {description, location, image, start, end});
+export async function createPost(uid, {description, location, image, start, end, national}) {
+  return await Post.create(String(uid), {description, location, image, start, end, national});
 }
 
 export async function findActivePosts(location, date, count = 10) {
-  let posts = await Post.findByLocation(location, 2, date, true);
+  let posts = await Post.findByLocation(location, 5, date, true);
 
   if (posts.length < count) {
-    posts = posts.concat(await Post.find({national: true}, true));
+    posts = posts.concat(await Post.find({national: true, end: {$gt: new Date(date)}}, true));
   }
 
   return posts.splice(0, count);

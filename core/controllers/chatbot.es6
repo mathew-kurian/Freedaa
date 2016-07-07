@@ -34,29 +34,30 @@ const geocoder = createGeoCoder('google', 'https', {
   formatterPattern: '%n %S in %c'
 });
 
-const cleverbot = new CleverBot('jSNrlROQLe2mO64c', 'vhxWWCBZxfjSxW4zvZoVmqmFLWl3qJxh');
-
 imgur.setCredentials(config.get('Imgur.email'), config.get('Imgur.password'), config.get('Imgur.clientId'));
 
 async function send(id, {elements = [], options = []}) {
+  let out = null;
+
+  elements.push(null);
+
   for (const element of elements) {
-
-    try {
-      const out = new Elements();
-      out.add(element);
-      out.setQuickReplies(options);
-
+    if (out && !element) {
       try {
         await bot.send(id, out); // eslint-disable-line babel/no-await-in-loop
       } catch (e) {
         console.error(e);
       }
-    } catch (e) {
-      console.error(e);
-      console.log(e.stack);
     }
 
-    await Bot.wait(1400); // eslint-disable-line babel/no-await-in-loop
+    if (!out || !element) {
+      out = new Elements();
+      out.setQuickReplies(options);
+    }
+
+    if (element) {
+      out.add(element);
+    }
   }
 }
 
@@ -80,9 +81,7 @@ dispatcher.registerBot(Freedaa, {
       }
 
       const {first_name: first} = await bot.fetchUser(uid, 'first_name'); // TODO store into db
-      const {text} = await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_ON_POST_VIEW, to, {first});
-      const out = new Elements().add({text});
-      await bot.send(to, out);
+      send(to, await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_ON_POST_VIEW, to, {first}))
     } catch (e) {
       console.error(e);
     }
@@ -142,6 +141,7 @@ dispatcher.registerBot(Freedaa, {
     }
   },
   async getSass(input, tag = null) {
+    const cleverbot = new CleverBot('jSNrlROQLe2mO64c', 'vhxWWCBZxfjSxW4zvZoVmqmFLWl3qJxh');
     cleverbot.setNick(tag);
 
     return new Promise((resolve, reject) => {
@@ -162,9 +162,7 @@ dispatcher.registerBot(Freedaa, {
       });
     });
   },
-  async addPost(uid, {location, start, end, description, image}) {
-    console.log(image);
-
+  async addPost(uid, {location, start, end, description, image, national}) {
     try {
       const {data: {link}} = await imgur.uploadUrl(image);
 
@@ -173,7 +171,7 @@ dispatcher.registerBot(Freedaa, {
       console.error(e);
     }
 
-    return await Post.createPost(uid, {description, start, end, location, image});
+    return await Post.createPost(uid, {description, start, end, location, image, national});
   },
   async setUserNotificationOption(uid, value) {
     await User.updateUser(uid, {notifications: value});
