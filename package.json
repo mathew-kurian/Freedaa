@@ -33,7 +33,6 @@
     "config": "1.20.1",
     "express": "4.13.4",
     "facebook-messenger-bot": "https://github.com/bluejamesbond/FacebookMessengerBot.js",
-    "google": "2.0.0",
     "grunt": "1.0.1",
     "grunt-browserify": "5.0.0",
     "grunt-cli": "1.2.0",

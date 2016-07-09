@@ -2,10 +2,16 @@
 @import 'shared/fonts';
 @import 'shared/base';
 @import 'shared/layouts';
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,300,100,500,700);
 
 body {
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Roboto', sans-serif;
   overflow: hidden;
+}
+
+#app {
+  overflow: scroll;
+  -webkit-overflow-scrolling: touch;
 }
 
 .button {
@@ -34,14 +40,13 @@ body {
 
 .post {
   padding: 10px;
-  border-bottom: 1px solid #EEE;
+  background: #eff0f3;
   position: relative;
   cursor: pointer;
-  transition: box-shadow 400ms;
+  transition: background 400ms;
+  border-bottom: 1px solid rgba(0, 0, 0, .12);
   &:hover {
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 1;
+    background: #edeef1;
   }
 }
 
@@ -57,12 +62,73 @@ body {
 }
 
 .tag {
-  font-size: 10px;
-  font-weight: 100;
+  font-size: 9px;
   display: inline-block;
-  padding: 0 5px;
+  padding: 3px 5px;
   text-transform: uppercase;
-  color: #888;
-  border: 1px solid #888;
+  color: #fff;
   margin-right: 4px;
+  border-radius: 3px;
+  background: #59c2ff;
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.template {
+  border-radius: 8px;
+  overflow: hidden;
+  color: rgba(0, 0, 0, 1);
+  background: white;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.15), 0px 8px 10px rgba(0, 0, 0, 0.05);
+  .image {
+    background-size: cover;
+    display: block;
+    padding-bottom: 52%;
+    position: relative;
+    background-position: 50% 50%;
+    height: 150px;
+  }
+  .text {
+    font-size: 12px;
+    padding: 6px;
+    .title {
+      font-size: 12px;
+      font-weight: bold;
+      line-height: 15px;
+      margin-bottom: 2px;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: rgba(0, 0, 0, .40);
+    }
+  }
+
+  .clicker {
+    font-size: 12px;
+    text-align: center;
+    line-height: 32px;
+    border-top: 1px solid rgba(0, 0, 0, .12);
+    font-weight: bold;
+    color: #365899;
+  }
+}
+
+.editor {
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.15), 0px 8px 10px rgba(0, 0, 0, 0.05);
+}
+
+.mobile {
+  display: none;
+}
+
+@media all and (max-width: 500px) {
+  .mobile {
+    display: block !important;
+  }
+  .no-mobile {
+    display: none !important;
+  }
 }

@@ -10,7 +10,6 @@ import * as User from './user.es6';
 import CleverBot from 'cleverbot.io';
 import fetch from '../../libs/fetch.es6';
 import Mitsuku from '../../libs/Mitsuku.es6';
-import google from 'google';
 
 export default class MongoContextStore extends ContextStore {
   async read(uid) {
@@ -109,25 +108,6 @@ dispatcher.registerBot(Freedaa, {
   }
 }, {
   async getCoordinatesFromAddress(text) {
-    // return new Promise((resolve, reject) => {
-    //   google(text, async(err, res) => {
-    //     if (err) {
-    //       console.log(err);
-    //       return reject(err);
-    //     }
-    //
-    //     for (let i = 0; i < res.links.length; ++i) {
-    //       if (/, [A-Z]{2} [0-9]{5}$/gi.test(res.links[i].title)) {
-    //         const addr = await geocoder.geocode(res.links[i].title);
-    //
-    //         return resolve({lat: addr[0].latitude, long: addr[0].longitude});
-    //       }
-    //     }
-    //
-    //     return reject(new Error('Not a valid address'));
-    //   });
-    // });
-
     const addr = await geocoder.geocode(text);
     return {lat: addr[0].latitude, long: addr[0].longitude};
   },

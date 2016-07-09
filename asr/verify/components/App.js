@@ -3,15 +3,16 @@ import Influx from 'react-influx';
 import fetch from '../../libs/fetch.es6';
 import {ifcat} from '../../libs/utils';
 import AceEditor from 'react-ace';
+import moment from 'moment';
 
 import 'brace/mode/json';
-import 'brace/theme/monokai';
+import 'brace/theme/xcode';
 
 class App extends Influx.Component {
   constructor(...args) {
     super(...args);
 
-    this.state = {posts: [], post: {}};
+    this.state = {posts: []};
   }
 
   async componentWillMount() {
@@ -19,12 +20,10 @@ class App extends Influx.Component {
     this.setState({posts});
   }
 
-  async _updateSelectedPost() {
-    const {_id} = this.state;
-
+  async _updatePost(_id) {
     try {
       await fetch(`/post/${_id}/update`, {
-        body: {post: JSON.parse(this._value)},
+        body: {post: JSON.parse(this.refs[`editor-${_id}`].editor.getValue())},
         method: 'post'
       });
 
@@ -34,9 +33,7 @@ class App extends Influx.Component {
     }
   }
 
-  async _verifySelectedPost() {
-    const {_id} = this.state;
-
+  async _verifyPost(_id) {
     try {
       await fetch(`/post/${_id}/verify`, {
         method: 'post'
@@ -48,9 +45,7 @@ class App extends Influx.Component {
     }
   }
 
-  async _deleteSelectedPost() {
-    const {_id} = this.state;
-
+  async _deletePost(_id) {
     try {
       await fetch(`/post/${_id}/delete`, {
         body: {reason: prompt('A reason for deleting')},
@@ -63,42 +58,48 @@ class App extends Influx.Component {
     }
   }
 
-  async _updateValue(value) {
-    this._value = value;
-  }
-
   render() {
-    const posts = this.state.posts.map(post => (
-      <div key={post._id}>
-        <div className='post flex' onClick={() => this.setState({post, _id: post._id})}>
-          <div className='box'>
-            <div className='id'>{post._id} by {post.userId}</div>
-            <div className='description'>{post.description}</div>
-            <div>
-              <div className='tag'>{ifcat({verified: post.verified, unverified: !post.verified})}</div>
-              <div className='tag'>{ifcat({deleted: post.deleted, active: !post.deleted})}</div>
+    const posts = this.state.posts.map(post => {
+      const period = post.start - Date.now() > 60 * 60 * 1000 * 12 ?
+        moment(post.start).format('MMM D') : `${moment(post.start).format('LT')} - ${moment(post.end).format('LT')}`;
+
+      return (
+        <div key={post._id}>
+          <div className='post flex'>
+            <div className='box' style={{margin: 10}}>
+              <div className='mobile' style={{marginBottom: 10}}>
+                <div className='tag'>{ifcat({verified: post.verified, unverified: !post.verified})}</div>
+                <div className='tag'>{ifcat({deleted: post.deleted, active: !post.deleted})}</div>
+              </div>
+              <div className='template'>
+                <div className='image' style={{backgroundImage:`url("${post.image}")`}}></div>
+                <div className='text'>
+                  <div className='title'>{`${post.national ? 'NATIONAL - ' : ''}${post.description}`}</div>
+                  <div className='subtitle'>{`${period} · ${post.views} views`}</div>
+                </div>
+                <div className='clicker no-mobile' onClick={this._updatePost.bind(this, post._id)}>Update</div>
+                <div className='clicker' onClick={this._verifyPost.bind(this, post._id)}>Verify</div>
+                <div className='clicker' onClick={this._deletePost.bind(this, post._id)}>Delete</div>
+              </div>
+            </div>
+            <div className='box no-mobile' style={{width: '90%', margin: 10}}>
+              <div className='flex vertical full'>
+                <div style={{marginBottom: 10}}>
+                  <div className='tag'>{ifcat({verified: post.verified, unverified: !post.verified})}</div>
+                  <div className='tag'>{ifcat({deleted: post.deleted, active: !post.deleted})}</div>
+                </div>
+                <div className='editor'>
+                  <AceEditor ref={`editor-${post._id}`} mode='json' height='100%' width='100%' theme='xcode'
+                             name={post._id}
+                             showGutter={true} value={JSON.stringify(post, null, 2)}
+                             editorProps={{$blockScrolling: true}}/>
+                </div>
+              </div>
             </div>
           </div>
-          { post._id === this.state._id ?
-            <div className='flex center' style={{maxWidth: 100}} onClick={() => this._updateSelectedPost()}>
-              <div className='button'>Update</div>
-            </div> : null }
-          { post._id === this.state._id ?
-            <div className='flex center' style={{maxWidth: 100}} onClick={() => this._verifySelectedPost()}>
-              <div className='button'>Verify</div>
-            </div> : null }
-          { post._id === this.state._id ?
-            <div className='flex center' style={{maxWidth: 100}} onClick={() => this._deleteSelectedPost()}>
-              <div className='button'>Delete</div>
-            </div> : null }
         </div>
-        { post._id === this.state._id ? <div className='flex'>
-          <AceEditor ref='editor' mode='json' height='260px' width='100%' theme='monokai' name={post._id}
-                     showGutter={false} value={JSON.stringify(this.state.post, null, 2)}
-                     editorProps={{$blockScrolling: true}} onChange={value => this._updateValue(value)}/>
-        </div> : null }
-      </div>
-    ));
+      );
+    });
 
     return (
       <div>{posts}</div>
