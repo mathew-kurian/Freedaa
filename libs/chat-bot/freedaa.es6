@@ -132,7 +132,8 @@ export default class Freedaa extends Bot {
           },
           tooHungry: {
             test: [context.started,
-              async() => (await tdiff('i want free food, i\'m hungry', text.toLowerCase())) > 0.6],
+              async() => (await tdiff('i want free food, i\'m hungry', text.toLowerCase())) > 0.6,
+              async() => (await tdiff('find me free food', text.toLowerCase())) > 0.6],
             process: async() => ({output: {elements: [{text: 'Yappers. Send me your location or enter your zip code.'}]}})
           },
           location: {
@@ -202,6 +203,10 @@ export default class Freedaa extends Bot {
           },
           checkOptin: {
             test: [context.started, !!optin],
+            process: async() => ({output: {elements: [{text: 'You are already signed up! Just send me your location to begin.'}]}})
+          },
+          checkGetStarted: {
+            test: [context.started, data.action === 'GET_STARTED'],
             process: async() => ({output: {elements: [{text: 'You are already signed up! Just send me your location to begin.'}]}})
           }
         }

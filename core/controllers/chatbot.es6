@@ -40,6 +40,11 @@ const geocoder = createGeoCoder('google', 'https', {
   apiKey: config.get('Google.key')
 });
 
+(async function () {
+  console.log(await bot.setGreeting('Hey, just letting you know I am your free food b**tch'));
+  console.log(await bot.setGetStarted({data: {action: 'GET_STARTED'}}));
+})();
+
 imgur.setCredentials(config.get('Imgur.email'), config.get('Imgur.password'), config.get('Imgur.clientId'));
 
 async function send(id, {elements = [], options = []}) {
