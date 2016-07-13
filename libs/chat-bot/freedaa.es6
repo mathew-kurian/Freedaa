@@ -141,7 +141,7 @@ export default class Freedaa extends Bot {
             transitionTo: Freedaa.State.NOTIFICATIONS
           },
           notificationsState: {
-            test: [context.started, data.ns === 'NOTIFICATIONS'],
+            test: [context.started, data.ns === Freedaa.State.NOTIFICATIONS],
             transitionTo: Freedaa.State.NOTIFICATIONS
           },
           tooHungryText: {
@@ -209,9 +209,15 @@ export default class Freedaa extends Bot {
             transitionTo: data.ns
           },
           quit: {
-            test: [/^(quit|clear|reset|exit|end|cancel)/ig,
+            test: [/^(quit|clear|reset|exit|end|cancel)/ig || data.ns === Freedaa.State.SASSY,
               context.state === Freedaa.State.SUBMIT || context.state === Freedaa.State.POST],
             process: async() => ({output: {elements: [{text: 'Ok'}]}}),
+            transitionTo: Freedaa.State.SASSY
+          },
+          quitWithSass: {
+            test: [data.ns === Freedaa.State.SASSY,
+              context.state === Freedaa.State.SUBMIT || context.state === Freedaa.State.POST],
+            process: async() => ({output: {elements: [{text: `That's ok. Maybe another time :) But you know I get bored. Why don't you ask me something? Test me.`}]}}),
             transitionTo: Freedaa.State.SASSY
           },
           help: {
@@ -460,7 +466,14 @@ export default class Freedaa extends Bot {
                 return {output: {elements: [{text: 'I need a text input'}]}};
               }
 
-              return {output: {elements: [{text: 'Send me a picture'}]}};
+              return {
+                output: {
+                  elements: [{
+                    text: 'Send me a picture',
+                    buttons: [{text: `No pic. I'll try later`, data: {ns: Freedaa.State.SASSY}}]
+                  }]
+                }
+              };
             }
           }
         }
@@ -489,7 +502,7 @@ export default class Freedaa extends Bot {
                   elements: [
                     {text: `Hey ${first}, my name is Freedaa and I can help you find free food around you.`},
                     null,
-                    {text: 'Send me your location to begin or enter your zipcode.'}
+                    {text: 'Send me a location pin to begin or enter your zipcode.'}
                   ]
                 }
               };
