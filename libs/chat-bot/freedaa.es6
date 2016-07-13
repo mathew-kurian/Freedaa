@@ -15,6 +15,7 @@ export default class Freedaa extends Bot {
     postImage = undefined;
     postState = undefined;
     postStart = undefined;
+    searchPerformed = false;
   };
 
   static botname = 'Freedaa';
@@ -219,6 +220,12 @@ export default class Freedaa extends Bot {
           const posts = await adapters.getPosts(context.location, currTime);
           const address = await adapters.getAddressFromCoordinates([context.location.lat, context.location.long]);
 
+          let sass = [];
+          if (!context.searchPerfomed) {
+            sass = [null, {text: `Here's some free food. No need to thank me...well you probably should anyway.`}];
+            context.searchPerfomed = true;
+          }
+
           if (!posts.length) {
             const {notifications} = await adapters.getUserNotificationOption(context.uid);
 
@@ -229,15 +236,15 @@ export default class Freedaa extends Bot {
                     text: `Sorry, I can't seem to find any food around you :( Do you want me to let you know when
                     someone finds free found?`,
                     buttons: [{text: 'Yeah! Notify me', data: {action: 'notifications', value: true}}]
-                  }]
+                  }, ...sass]
                 }
               };
             }
 
-            return {output: {elements: [{text: `Sorry, I can't seem to find any food around you - ${address} :(`}]}};
+            return {output: {elements: [{text: `Sorry, I can't seem to find any food around you - ${address} :(`}, ...sass]}};
           }
 
-          return {output: {elements: posts.map(post => this._formatPostToCard(post))}};
+          return {output: {elements: [...posts.map(post => this._formatPostToCard(post)), ...sass]}};
         },
         transitionTo: Freedaa.State.SASSY
       },
