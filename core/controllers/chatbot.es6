@@ -99,7 +99,7 @@ dispatcher.registerBot(Freedaa, {
   },
   async onUserLocationChange(uid, {long, lat}) {
     console.log('onUserLocationChange', uid, {long, lat});
-    await User.updateUser(uid, {coordinates: [long, lat]});
+    await User.updateUser(uid, {location: [long, lat]});
   },
   async onUserOnboard(uid) {
     console.log('User onboard', uid);
@@ -116,7 +116,7 @@ dispatcher.registerBot(Freedaa, {
     const addr = await geocoder.geocode(text);
     return {lat: addr[0].latitude, long: addr[0].longitude};
   },
-  async getAddressFromCoordinates([lat, long]) {
+  async getAddressFromCoordinates([long, lat]) {
     return new Promise((resolve, reject) => {
       geocoderString.reverse({lat, lon: long}, (err, address) => {
         if (err) {
@@ -198,8 +198,8 @@ dispatcher.registerBot(Freedaa, {
   async getUserNotificationOption(uid) {
     return await User.getUserById(uid);
   },
-  async getPosts(coordinates, date) {
-    return await Post.findActivePosts(coordinates, date);
+  async getPosts(location, date) {
+    return await Post.findActivePosts(location, date);
   },
   async getPost(id) {
     return await Post.getPost(id);
@@ -217,9 +217,15 @@ bot.on('optin', (message, param) => respond(message));
 bot.on('postback', (event, message) => respond(message));
 bot.on('invalid-postback', (message, data) => console.log(data, message));
 
-Bus.on(Events.CORE_POST_VERIFIED, async({_id, uid}) => {
+Bus.on(Events.CORE_POST_VERIFIED, async({_id, uid, location, national}) => {
   const {first_name: first} = await bot.fetchUser(uid, 'first_name');
-  const res = await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_POST_VERIFIED, uid, _id, {first});
+  await send(uid, await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_POST_VERIFIED, uid, _id, {first}));
 
-  await send(uid, res);
+  if (!national) {
+    const users = await User.findUsersAround({long: location[0], lat: location[1]});
+    for (const user of users) {
+      if (user.uid === uid || !user.notifications) continue;
+      await send(user.uid, await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_ON_POST_CREATE, user.uid, _id, user, {first}));
+    }
+  }
 });

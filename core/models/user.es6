@@ -9,6 +9,16 @@ export async function find(attrs = {}) {
   return await (User.find({...attrs, deleted: false}).exec());
 }
 
+export async function findByLocation({lat, long}, radiusKm) {
+  return await (User.find({deleted: false})
+    .sort('end')
+    .where('location')
+    .near({
+      center: [long, lat],
+      maxDistance: radiusKm / 111.12
+    }).lean().exec());
+}
+
 export async function findOne(attrs = {}) {
   return await (User.findOne({...attrs, deleted: false}).exec());
 }

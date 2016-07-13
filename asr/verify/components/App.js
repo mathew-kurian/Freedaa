@@ -60,13 +60,25 @@ class App extends Influx.Component {
 
   render() {
     const posts = this.state.posts.map(post => {
-      const period = post.start - Date.now() > 60 * 60 * 1000 * 12 ?
-        moment(post.start).format('MMM D') : `${moment(post.start).format('LT')} - ${moment(post.end).format('LT')}`;
+      let period = '';
+      if (post.start - Date.now() < 60 * 60 * 1000 * 12) {
+        period = moment(post.start).format('LTS');
+      } else {
+
+        period = moment(post.start).format('MMM D h:mm');
+      }
+
+      period += ' - ';
+      if (post.end - Date.now() < 60 * 60 * 1000 * 18) {
+        period += moment(post.end).format('LTS');
+      } else {
+        period += moment(post.end).format('MMM D h:mm');
+      }
 
       return (
         <div key={post._id}>
           <div className='post flex'>
-            <div className='box' style={{margin: 10}}>
+            <div className='box' style={{margin: 10, minWidth: 200, width: 200}}>
               <div className='mobile' style={{marginBottom: 10}}>
                 <div className='tag'>{ifcat({verified: post.verified, unverified: !post.verified})}</div>
                 <div className='tag'>{ifcat({deleted: post.deleted, active: !post.deleted})}</div>

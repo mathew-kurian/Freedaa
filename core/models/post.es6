@@ -1,7 +1,7 @@
 import Post from '../../models/post.es6';
 
 export async function create(uid, {description, location: {lat, long}, start, end, image, national}) {
-  return await (new Post({uid, description, location: [lat, long], image, start, end, national}).save());
+  return await (new Post({uid, description, location: [long, lat], image, start, end, national}).save());
 }
 
 export async function findByLocation({lat, long}, radiusKm, date, valid = true) {
@@ -11,7 +11,7 @@ export async function findByLocation({lat, long}, radiusKm, date, valid = true) 
       .sort('end')
       .where('location')
       .near({
-        center: [lat, long],
+        center: [long, lat],
         maxDistance: radiusKm / 111.12
       }).lean().exec());
   } catch (e) {
@@ -22,7 +22,7 @@ export async function findByLocation({lat, long}, radiusKm, date, valid = true) 
     .sort('end')
     .where('location')
     .near({
-      center: [lat, long],
+      center: [long, lat],
       maxDistance: radiusKm / 111.12
     }).lean().exec());
 }

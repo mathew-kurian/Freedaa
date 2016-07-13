@@ -8,7 +8,7 @@ const userSchema = new Schema({
   first: String,
   last: String,
   email: String,
-  coordinates: {type: [Number], index: '2d'},
+  location: {type: [Number], index: '2d'},
   notifications: {type: Boolean, default: false},
   context: Object
 });

@@ -21,7 +21,12 @@ export default class Freedaa extends Bot {
   static botname = 'Freedaa';
   static version = 1;
 
-  static Actions = keyMirror({INPUT: null, NOTIFY_USER_ON_POST_VIEW: null, NOTIFY_USER_POST_VERIFIED: null});
+  static Actions = keyMirror({
+    INPUT: null,
+    NOTIFY_USER_ON_POST_VIEW: null,
+    NOTIFY_USER_POST_VERIFIED: null,
+    NOTIFY_USER_ON_POST_CREATE: null
+  });
   static State = keyMirror({START: null, SEARCH: null, SUBMIT: null, SASSY: null, NOTIFICATIONS: null, POST: null});
 
   static actionTypes = {
@@ -68,6 +73,24 @@ export default class Freedaa extends Bot {
     this.registerAction(Freedaa.Actions.INPUT, this.onInput);
     this.registerAction(Freedaa.Actions.NOTIFY_USER_ON_POST_VIEW, this.onNotifyUserOnPostView);
     this.registerAction(Freedaa.Actions.NOTIFY_USER_POST_VERIFIED, this.onPostVerified);
+    this.registerAction(Freedaa.Actions.NOTIFY_USER_ON_POST_CREATE, this.onNotifyUserOnPostCreate);
+  }
+
+  async onNotifyUserOnPostCreate(id) {
+    const {adapters} = this;
+    const post = await adapters.getPost(id);
+
+    return {
+      elements: [
+        {text: 'Found some free food around you'},
+        null,
+        this._formatPostToCard(post, [
+          {text: 'I want this food!', data: {action: 'lead', post: post._id}},
+          {text: 'Report', data: {action: 'report', post: post._id}},
+          {text: 'Notifications', data: {ns: Freedaa.State.NOTIFICATIONS}}
+        ])
+      ]
+    };
   }
 
   async onPostVerified(id) {
@@ -113,23 +136,13 @@ export default class Freedaa extends Bot {
               }
             }
           },
-          notifications: {
+          notificationsText: {
             test: [context.started, /^notify/ig],
             transitionTo: Freedaa.State.NOTIFICATIONS
           },
-          notificationsEnable: {
-            test: [data.action === 'notifications'],
-            process: async() => {
-              adapters.setUserNotificationOption(context.uid, data.value);
-              return {output: {elements: [{text: 'I will hit you up then. Just type "notify" if you change your mind'}]}};
-            }
-          },
-          notificationsDisable: {
-            test: [data.action === 'notifications'],
-            process: async() => {
-              adapters.setUserNotificationOption(context.uid, data.value);
-              return {output: {elements: [{text: 'I will hit you up then. Just type "notify" if you change your mind'}]}};
-            }
+          notificationsState: {
+            test: [context.started, data.ns === 'NOTIFICATIONS'],
+            transitionTo: Freedaa.State.NOTIFICATIONS
           },
           tooHungryText: {
             test: [context.started, async() => (await tdiff('i want free food, i\'m hungry', text.toLowerCase())) > 0.6],
@@ -175,7 +188,7 @@ export default class Freedaa extends Bot {
                   return {output: {elements: [{text: `${post.description} - go get it at ${address} between ${moment(post.start).format('MMM D LT')} and ${moment(post.end).format('MMM D LT')}`}]}};
                 }
               } catch (e) {
-                console.error(e);
+                console.error(e.stack);
                 return {output: {elements: [{text: 'Post has been deleted :('}]}};
               }
             }
@@ -196,7 +209,8 @@ export default class Freedaa extends Bot {
             transitionTo: data.ns
           },
           quit: {
-            test: /^(quit|clear|reset|exit|end)/ig,
+            test: [/^(quit|clear|reset|exit|end|cancel)/ig,
+              context.state === Freedaa.State.SUBMIT || context.state === Freedaa.State.POST],
             process: async() => ({output: {elements: [{text: 'Ok'}]}}),
             transitionTo: Freedaa.State.SASSY
           },
@@ -218,7 +232,7 @@ export default class Freedaa extends Bot {
         process: async() => {
           const currTime = await adapters.getCurrentTime(context.location);
           const posts = await adapters.getPosts(context.location, currTime);
-          const address = await adapters.getAddressFromCoordinates([context.location.lat, context.location.long]);
+          const address = await adapters.getAddressFromCoordinates([context.location.long, context.location.lat]);
 
           let sass = [];
           if (!context.searchPerfomed) {
@@ -274,7 +288,7 @@ export default class Freedaa extends Bot {
       },
       [Freedaa.State.SUBMIT]: {
         process: async() => {
-          const address = await adapters.getAddressFromCoordinates([context.location.lat, context.location.long]);
+          const address = await adapters.getAddressFromCoordinates([context.location.long, context.location.lat]);
 
           context.postLocation = context.location;
           context.postDescription = null;
@@ -532,8 +546,20 @@ export default class Freedaa extends Bot {
     {text: 'I want this food!', data: {action: 'lead', post: post._id}},
     {text: 'Report', data: {action: 'report', post: post._id}}
   ]) {
-    const period = post.start - Date.now() > 60 * 60 * 1000 * 12 ?
-      moment(post.start).format('MMM D') : `${moment(post.start).format('LT')} - ${moment(post.end).format('LT')}`;
+    let period = '';
+    if (post.start - Date.now() < 60 * 60 * 1000 * 12) {
+      period = moment(post.start).format('LTS');
+    } else {
+
+      period = moment(post.start).format('MMM D h:mm');
+    }
+
+    period += ' - ';
+    if (post.end - Date.now() < 60 * 60 * 1000 * 18) {
+      period += moment(post.end).format('LTS');
+    } else {
+      period += moment(post.end).format('MMM D h:mm');
+    }
 
     return {
       text: `${post.national ? 'NATIONAL - ' : ''}${post.description}`,

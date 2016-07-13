@@ -8,6 +8,11 @@ export async function getUserById(uid) {
   return await User.findOne({uid});
 }
 
+export async function findUsersAround(location) {
+  return User.findByLocation(location, 5);
+}
+
+
 export async function updateUser(uid, attrs) {
   try {
     return await User.findByIdAndUpdate(uid, attrs);
