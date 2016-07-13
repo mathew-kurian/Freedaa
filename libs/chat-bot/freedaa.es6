@@ -130,11 +130,13 @@ export default class Freedaa extends Bot {
               return {output: {elements: [{text: 'I will hit you up then. Just type "notify" if you change your mind'}]}};
             }
           },
-          tooHungry: {
-            test: [context.started,
-              async() => (await tdiff('i want free food, i\'m hungry', text.toLowerCase())) > 0.6,
-              async() => (await tdiff('find me free food', text.toLowerCase())) > 0.6],
+          tooHungryText: {
+            test: [context.started, async() => (await tdiff('i want free food, i\'m hungry', text.toLowerCase())) > 0.6],
             process: async() => ({output: {elements: [{text: 'Yappers. Send me your location or enter your zip code.'}]}})
+          },
+          freeFoodText: {
+            test: [context.started, async() => (await tdiff('find me free food', text.toLowerCase())) > 0.6],
+            process: async() => ({output: {elements: [{text: 'Yea yea. Send me your location or enter your zip code.'}]}})
           },
           location: {
             test: [!!location, context.started],

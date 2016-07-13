@@ -41,7 +41,7 @@ const geocoder = createGeoCoder('google', 'https', {
 });
 
 (async function () {
-  console.log(await bot.setGreeting('Hey, just letting you know I am your free food b**tch'));
+  console.log(await bot.setGreeting('Hi my name is Freedaa, I can help find free food around and share the free food you find!'));
   console.log(await bot.setGetStarted({data: {action: 'GET_STARTED'}}));
 })();
 

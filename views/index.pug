@@ -11,11 +11,7 @@ block body
             .letter I am a chatbot that helps you find free food. Find me on Facebook Messenger.
             .signature - Freedaa
             .messenger
-                a#l1(href='https://www.messenger.com/t/freedaabot')
-                    .button.hide#link
-                        i
-                        .text Say "Hi" on Messenger
-                #fb.fb-send-to-messenger(messenger_app_id='1163597870337222', page_id='1113300208713052', data-ref='PASS_THROUGH_PARAM', color='blue', size='large')
+                div(messenger_app_id='1163597870337222', page_id='1113300208713052',  class='fb-messengermessageus', color='blue', size='large')
             .toolbar
                 a.item#l2(href='https://m.facebook.com/freedaabot') Facebook
                 a.item(href='/privacy') Privacy
@@ -40,6 +36,7 @@ block body
             fjs.parentNode.insertBefore(js, fjs);
         }(document, 'script', 'facebook-jssdk'));
 
+        /*
         function isMobileOrTablet() {
             var check = false;
             (function (a) {
@@ -72,3 +69,4 @@ block body
             buttons();
             setInterval(buttons, 1000);
         }, false);
+        */
