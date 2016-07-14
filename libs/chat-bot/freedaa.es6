@@ -145,11 +145,11 @@ export default class Freedaa extends Bot {
             transitionTo: Freedaa.State.NOTIFICATIONS
           },
           tooHungryText: {
-            test: [context.started, async() => (await tdiff('i want free food, i\'m hungry', text.toLowerCase())) > 0.6],
+            test: [context.started, async() => (await tdiff('i\'m hungry', text.toLowerCase())) > 0.6],
             process: async() => ({output: {elements: [{text: 'Yappers. Send me your location or enter your zip code.'}]}})
           },
           freeFoodText: {
-            test: [context.started, async() => (await tdiff('find me free food', text.toLowerCase())) > 0.6],
+            test: [context.started, /(free\s+food)/gi.test(text)],
             process: async() => ({output: {elements: [{text: 'Yea yea. Send me your location or enter your zip code.'}]}})
           },
           location: {
@@ -242,7 +242,8 @@ export default class Freedaa extends Bot {
 
           let sass = [];
           if (!context.searchPerfomed) {
-            sass = [null, {text: `Here's some free food. No need to thank me...well you probably should anyway.`}];
+            sass = [null, {text: `Here's some free food. No need to thank me...well you probably should anyway. PS: I need your help. 
+            If you see any free food or great deals, let me know so I can share them. I get pretty lonely here too so can I meet your friends? - please share me!`}];
             context.searchPerfomed = true;
           }
 
@@ -586,9 +587,10 @@ export default class Freedaa extends Bot {
     t = t.trim();
     t = t.replace(/\n/g, ' ');
     t = t.replace(/ {2,}/g, ' ');
-    t = (t.match(/[^\.!\?]+[\.!\?]*/g) || [t]).map(s => s.trim()).join(' ');
+    t = (t.match(/[^\.!\?]+[\.!\?]*[\n\t $]+]/g) || [t]).map(s => s.trim()).join(' ');
     t = t.replace(/\\n/g, '\n');
     t = t.replace(/\n +/g, '\n');
+    t = t.replace(/ {2,}/g, ' ');
 
     return t;
   }
