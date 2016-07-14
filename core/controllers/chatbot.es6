@@ -217,15 +217,25 @@ bot.on('optin', (message, param) => respond(message));
 bot.on('postback', (event, message) => respond(message));
 bot.on('invalid-postback', (message, data) => console.log(data, message));
 
-Bus.on(Events.CORE_POST_VERIFIED, async({_id, uid, location, national}) => {
+Bus.on(Events.CORE_POST_VERIFIED, async({_id, uid, location, national, description}) => {
   const {first_name: first} = await bot.fetchUser(uid, 'first_name');
   await send(uid, await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_POST_VERIFIED, uid, _id, {first}));
 
-  if (!national) {
+  console.log(national, description, description.indexOf('#FreedaaBot') > -1);
+  if (description.indexOf('#FreedaaBot') > -1) {
+    console.log("SUP");
+    const users = await User.getAllUsers();
+    console.log(users.length);
+    for (const user of users) {
+      if (user.uid === uid) continue;
+      console.log(user.uid);
+      send(user.uid, await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_ON_POST_CREATE, user.uid, _id, user, {first}));
+    }
+  } else if (!national) {
     const users = await User.findUsersAround({long: location[0], lat: location[1]});
     for (const user of users) {
       if (user.uid === uid || !user.notifications) continue;
-      await send(user.uid, await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_ON_POST_CREATE, user.uid, _id, user, {first}));
+      send(user.uid, await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_ON_POST_CREATE, user.uid, _id, user, {first}));
     }
   }
 });

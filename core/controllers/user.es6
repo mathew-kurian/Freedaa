@@ -20,3 +20,7 @@ export async function updateUser(uid, attrs) {
     throw new TraceError('Could not updateUser', e);
   }
 }
+
+export async function getAllUsers() {
+  return await User.find({});
+}

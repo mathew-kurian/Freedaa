@@ -84,11 +84,7 @@ export default class Freedaa extends Bot {
       elements: [
         {text: 'Found some free food around you'},
         null,
-        this._formatPostToCard(post, [
-          {text: 'I want this food!', data: {action: 'lead', post: post._id}},
-          {text: 'Report', data: {action: 'report', post: post._id}},
-          {text: 'Notifications', data: {ns: Freedaa.State.NOTIFICATIONS}}
-        ])
+        this._formatPostToCard(post, {want: true, share: true})
       ]
     };
   }
@@ -101,7 +97,7 @@ export default class Freedaa extends Bot {
       elements: [
         {text: 'Your post has been verified!'},
         null,
-        this._formatPostToCard(post, [{text: 'Delete', data: {action: 'delete', post: post._id}}])
+        this._formatPostToCard(post, {delete: true})
       ]
     };
   }
@@ -137,7 +133,7 @@ export default class Freedaa extends Bot {
             }
           },
           notificationsText: {
-            test: [context.started, /^notify/ig],
+            test: [context.started, context.state !== Freedaa.State.NOTIFICATIONS, /(notify|notification)/ig],
             transitionTo: Freedaa.State.NOTIFICATIONS
           },
           notificationsState: {
@@ -181,7 +177,7 @@ export default class Freedaa extends Bot {
 
                 actions.onPostView(data.post, context.uid);
 
-                if (post.national) {
+                if (post.national || post.global) {
                   return {output: {elements: [{text: `${post.description} - ${moment(post.start).format('MMM D LT')} to ${moment(post.end).format('MMM D LT')}`}]}};
                 } else {
                   const address = await adapters.getAddressFromCoordinates(post.location);
@@ -242,8 +238,10 @@ export default class Freedaa extends Bot {
 
           let sass = [];
           if (!context.searchPerfomed) {
-            sass = [null, {text: `Here's some free food. No need to thank me...well you probably should anyway. PS: I need your help. 
-            If you see any free food or great deals, let me know so I can share them. I get pretty lonely here too so can I meet your friends? - please share me!`}];
+            sass = [null, {
+              text: `Here's some free food. No need to thank me...well you probably should anyway. PS: I need your help. 
+            If you see any free food or great deals, let me know so I can share them. I get pretty lonely here too so can I meet your friends? - please share me!`
+            }];
             context.searchPerfomed = true;
           }
 
@@ -265,7 +263,15 @@ export default class Freedaa extends Bot {
             return {output: {elements: [{text: `Sorry, I can't seem to find any food around you - ${address} :(`}, ...sass]}};
           }
 
-          return {output: {elements: [...posts.map(post => this._formatPostToCard(post)), ...sass]}};
+          return {
+            output: {
+              elements: [...posts.map(post => this._formatPostToCard(post, {
+                want: true,
+                report: true,
+                share: true
+              })), ...sass]
+            }
+          };
         },
         transitionTo: Freedaa.State.SASSY
       },
@@ -449,7 +455,7 @@ export default class Freedaa extends Bot {
                     elements: [
                       {text: 'You are all set! We will notify you when your post is verified.'},
                       null,
-                      this._formatPostToCard(post, [{text: 'Delete', data: {action: 'delete', post: post._id}}])
+                      this._formatPostToCard(post, {delete: true})
                     ]
                   },
                   transitionTo: Freedaa.State.SASSY
@@ -556,27 +562,56 @@ export default class Freedaa extends Bot {
     return output;
   }
 
-  _formatPostToCard(post, buttons = [
-    {text: 'I want this food!', data: {action: 'lead', post: post._id}},
-    {text: 'Report', data: {action: 'report', post: post._id}}
-  ]) {
+  _formatPostToCard(post, opts = {share: false, report: false, delete: false, want: false, notifications: false}) {
     let period = '';
     if (post.start - Date.now() < 60 * 60 * 1000 * 12) {
-      period = moment(post.start).format('LTS');
+      period = moment(post.start).format('h:mm a');
     } else {
 
-      period = moment(post.start).format('MMM D h:mm');
+      period = moment(post.start).format('MMM D h:mm a');
     }
 
     period += ' - ';
     if (post.end - Date.now() < 60 * 60 * 1000 * 18) {
-      period += moment(post.end).format('LTS');
+      period += moment(post.end).format('h:mm a');
     } else {
-      period += moment(post.end).format('MMM D h:mm');
+      period += moment(post.end).format('MMM D h:mm a');
+    }
+
+    let tag = '';
+
+    if (post.global) {
+      tag = 'GLOBAL'
+    } else if (post.national) {
+      tag = 'USA'
+    }
+
+    let buttons = [];
+    if (opts.want) {
+      buttons.push({text: 'I want this food!', data: {action: 'lead', post: post._id}})
+    }
+
+    if (opts.delete) {
+      buttons.push({text: 'Delete', data: {action: 'delete', post: post._id}});
+    }
+
+    if (opts.report) {
+      buttons.push({text: 'Report', data: {action: 'report', post: post._id}});
+    }
+
+    if (opts.notifications) {
+      buttons.push({text: 'Notifications', data: {ns: Freedaa.State.NOTIFICATIONS}});
+    }
+
+    if (opts.share) {
+      buttons.push({
+        text: 'Share',
+        url: `https://www.facebook.com/dialog/feed?app_id=1163597870337222&display=popup&description=${encodeURIComponent(post.description)}&link=http://freedaa.com&redirect_uri=http://freedaa.com&picture=${post.image}`
+      });
     }
 
     return {
-      text: `${post.national ? 'NATIONAL - ' : ''}${post.description}`,
+      text: `${tag} - ${post.description}`,
       subtext: `${period} · ${post.views} views`,
       image: post.image,
       buttons

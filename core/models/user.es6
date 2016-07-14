@@ -6,7 +6,7 @@ export async function create(uid, {first, last, email, context}) {
 }
 
 export async function find(attrs = {}) {
-  return await (User.find({...attrs, deleted: false}).exec());
+  return await (User.find({...attrs, deleted: false}).lean().exec());
 }
 
 export async function findByLocation({lat, long}, radiusKm) {
@@ -20,7 +20,7 @@ export async function findByLocation({lat, long}, radiusKm) {
 }
 
 export async function findOne(attrs = {}) {
-  return await (User.findOne({...attrs, deleted: false}).exec());
+  return await (User.findOne({...attrs, deleted: false}).lean().exec());
 }
 
 export async function findByIdAndUpdate(uid, attrs = {}) {

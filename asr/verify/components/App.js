@@ -62,17 +62,28 @@ class App extends Influx.Component {
     const posts = this.state.posts.map(post => {
       let period = '';
       if (post.start - Date.now() < 60 * 60 * 1000 * 12) {
-        period = moment(post.start).format('LTS');
+        period = moment(post.start).format('h:mm a');
       } else {
 
-        period = moment(post.start).format('MMM D h:mm');
+        period = moment(post.start).format('MMM D h:mm a');
       }
 
       period += ' - ';
       if (post.end - Date.now() < 60 * 60 * 1000 * 18) {
-        period += moment(post.end).format('LTS');
+        period += moment(post.end).format('h:mm a');
       } else {
-        period += moment(post.end).format('MMM D h:mm');
+        period += moment(post.end).format('MMM D h:mm a');
+      }
+
+      if (post.end < Date.now()) {
+        period = 'EXPIRED';
+      }
+
+      let tag;
+      if (post.global) {
+        tag = 'GLOBAL'
+      } else if (post.national) {
+        tag = 'USA'
       }
 
       return (
@@ -86,7 +97,7 @@ class App extends Influx.Component {
               <div className='template'>
                 <div className='image' style={{backgroundImage:`url("${post.image}")`}}></div>
                 <div className='text'>
-                  <div className='title'>{`${post.national ? 'NATIONAL - ' : ''}${post.description}`}</div>
+                  <div className='title'>{`${tag} - ${post.description}`}</div>
                   <div className='subtitle'>{`${period} · ${post.views} views`}</div>
                 </div>
                 <div className='clicker no-mobile' onClick={this._updatePost.bind(this, post._id)}>Update</div>

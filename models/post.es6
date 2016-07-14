@@ -9,6 +9,7 @@ const postSchema = new Schema({
   views: {default: 1, type: Number},
   deleted: {default: false, type: Boolean},
   end: Date,
+  global: Boolean,
   national: {default: false, type: Boolean},
   location: {type: [Number], index: '2d'},
   description: String,
