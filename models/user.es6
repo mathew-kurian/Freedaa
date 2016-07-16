@@ -9,7 +9,7 @@ const userSchema = new Schema({
   last: String,
   email: String,
   location: {type: [Number], index: '2d'},
-  notifications: {type: Boolean, default: false},
+  notifications: {type: Boolean, default: true},
   context: Object
 });
 
