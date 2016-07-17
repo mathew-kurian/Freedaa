@@ -145,7 +145,7 @@ export default class Freedaa extends Bot {
             process: async() => ({output: {elements: [{text: 'Yappers. Send me your location or enter your zip code.'}]}})
           },
           freeFoodText: {
-            test: [context.started, /(free\s+food)/gi.test(text)],
+            test: [context.started, /(food)/gi.test(text)],
             process: async() => ({output: {elements: [{text: 'Yea yea. Send me your location or enter your zip code.'}]}})
           },
           location: {
@@ -581,9 +581,9 @@ export default class Freedaa extends Bot {
     let tag = '';
 
     if (post.global) {
-      tag = 'GLOBAL'
+      tag = 'GLOBAL - '
     } else if (post.national) {
-      tag = 'USA'
+      tag = 'USA - '
     }
 
     let buttons = [];
@@ -611,7 +611,7 @@ export default class Freedaa extends Bot {
     }
 
     return {
-      text: `${tag} - ${post.description}`,
+      text: `${tag}${post.description}`,
       subtext: `${period} · ${post.views} views`,
       image: post.image,
       buttons

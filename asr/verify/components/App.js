@@ -79,11 +79,11 @@ class App extends Influx.Component {
         period = 'EXPIRED';
       }
 
-      let tag;
+      let tag = '';
       if (post.global) {
-        tag = 'GLOBAL'
+        tag = 'GLOBAL - '
       } else if (post.national) {
-        tag = 'USA'
+        tag = 'USA - '
       }
 
       return (
@@ -97,7 +97,7 @@ class App extends Influx.Component {
               <div className='template'>
                 <div className='image' style={{backgroundImage:`url("${post.image}")`}}></div>
                 <div className='text'>
-                  <div className='title'>{`${tag} - ${post.description}`}</div>
+                  <div className='title'>{`${tag}${post.description}`}</div>
                   <div className='subtitle'>{`${period} · ${post.views} views`}</div>
                 </div>
                 <div className='clicker no-mobile' onClick={this._updatePost.bind(this, post._id)}>Update</div>

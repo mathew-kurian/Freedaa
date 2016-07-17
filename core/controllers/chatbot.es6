@@ -221,14 +221,10 @@ Bus.on(Events.CORE_POST_VERIFIED, async({_id, uid, location, national, descripti
   const {first_name: first} = await bot.fetchUser(uid, 'first_name');
   await send(uid, await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_POST_VERIFIED, uid, _id, {first}));
 
-  console.log(national, description, description.indexOf('#FreedaaBot') > -1);
   if (description.indexOf('#FreedaaBot') > -1) {
-    console.log("SUP");
     const users = await User.getAllUsers();
-    console.log(users.length);
     for (const user of users) {
       if (user.uid === uid) continue;
-      console.log(user.uid);
       send(user.uid, await dispatcher.dispatch(Freedaa.Actions.NOTIFY_USER_ON_POST_CREATE, user.uid, _id, user, {first}));
     }
   } else if (!national) {
