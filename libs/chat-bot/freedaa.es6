@@ -563,7 +563,7 @@ export default class Freedaa extends Bot {
   }
 
   _formatPostToCard(post, opts = {share: false, report: false, delete: false, want: false, notifications: false}) {
-    const period = `${period = moment(post.start).format('MMM D h:mm a')} - ${moment(post.end).format('MMM D h:mm a')}`;
+    const period = `${moment(post.start).format('MMM D h:mm a')} - ${moment(post.end).format('MMM D h:mm a')}`;
     let tag = '';
 
     if (post.global) {
