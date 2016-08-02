@@ -563,21 +563,7 @@ export default class Freedaa extends Bot {
   }
 
   _formatPostToCard(post, opts = {share: false, report: false, delete: false, want: false, notifications: false}) {
-    let period = '';
-    if (post.start - Date.now() < 60 * 60 * 1000 * 12) {
-      period = moment(post.start).format('h:mm a');
-    } else {
-
-      period = moment(post.start).format('MMM D h:mm a');
-    }
-
-    period += ' - ';
-    if (post.end - Date.now() < 60 * 60 * 1000 * 18) {
-      period += moment(post.end).format('h:mm a');
-    } else {
-      period += moment(post.end).format('MMM D h:mm a');
-    }
-
+    const period = `${period = moment(post.start).format('MMM D h:mm a')} - ${moment(post.end).format('MMM D h:mm a')}`;
     let tag = '';
 
     if (post.global) {
