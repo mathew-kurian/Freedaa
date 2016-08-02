@@ -436,8 +436,8 @@ export default class Freedaa extends Bot {
               //  return {output: {elements: [{text: `This event is less than 5 minutes?`}]}};
               // }
 
-              if (date.getTime() - context.postStart > 60 * 60 * 1000 * 24 * 5) {
-                return {output: {elements: [{text: 'You cannot make a post that lasts > 5 days'}]}};
+              if (date.getTime() - context.postStart > 60 * 60 * 1000 * 24 * 20) {
+                return {output: {elements: [{text: 'You cannot make a post that lasts > 20 days'}]}};
               }
 
               try {
